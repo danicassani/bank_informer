@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.db import models
 from django.utils import timezone
 
@@ -14,6 +16,11 @@ class StatementImport(models.Model):
         max_length=255,
         help_text="Nombre del fichero CSV importado para trazabilidad.",
     )
+    original_file = models.FileField(
+        upload_to="statements/",
+        help_text="Archivo CSV original subido por el usuario.",
+        null=True,
+    )
     imported_at = models.DateTimeField(
         default=timezone.now,
         help_text="Fecha y hora en la que se procesó el fichero.",
@@ -26,6 +33,11 @@ class StatementImport(models.Model):
 
     def __str__(self) -> str:
         return f"{self.source_name} ({self.imported_at:%Y-%m-%d %H:%M})"
+
+    def save(self, *args, **kwargs) -> None:
+        if self.original_file and not self.file_name:
+            self.file_name = Path(self.original_file.name).name
+        super().save(*args, **kwargs)
 
 
 class BankTransaction(models.Model):

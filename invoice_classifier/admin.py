@@ -16,6 +16,14 @@ class StatementImportAdmin(admin.ModelAdmin):
     list_filter = ("source_name", "imported_at")
     search_fields = ("source_name", "file_name")
     date_hierarchy = "imported_at"
+    readonly_fields = ("imported_at", "created_at")
+    fields = (
+        "source_name",
+        "file_name",
+        "original_file",
+        "imported_at",
+        "created_at",
+    )
 
 
 class TransactionClassificationInline(admin.TabularInline):
