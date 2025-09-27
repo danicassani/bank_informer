@@ -80,7 +80,8 @@
 
         <section class="chart-card visualizer__chart">
           {% if chart_entries %}
-            <div class="chart-card__inner" data-chart='{{ chart_payload|escapejs }}'>
+            {{ chart_entries|json_script:"visualizer-chart-data" }}
+            <div class="chart-card__inner">
               <canvas id="spending-chart" height="120"></canvas>
             </div>
           {% else %}

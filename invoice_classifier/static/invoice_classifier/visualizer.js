@@ -18,20 +18,21 @@
     return colors;
   }
 
-  function renderChart(container) {
-    if (!container) {
-      return;
+  function readChartData() {
+    const script = document.getElementById('visualizer-chart-data');
+    if (!script) {
+      return [];
     }
 
-    const rawData = container.dataset.chart || '[]';
-    let parsed;
     try {
-      parsed = JSON.parse(rawData);
+      return JSON.parse(script.textContent || '[]');
     } catch (error) {
-      parsed = [];
+      return [];
     }
+  }
 
-    if (!Array.isArray(parsed) || parsed.length === 0) {
+  function renderChart(container, parsed) {
+    if (!container || !Array.isArray(parsed) || parsed.length === 0) {
       return;
     }
 
@@ -41,6 +42,10 @@
 
     const ctx = container.querySelector('#spending-chart');
     if (!ctx) {
+      return;
+    }
+
+    if (typeof window.Chart !== 'function') {
       return;
     }
 
@@ -104,6 +109,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     const container = document.querySelector('.chart-card__inner');
-    renderChart(container);
+    const chartData = readChartData();
+    renderChart(container, chartData);
   });
 })();

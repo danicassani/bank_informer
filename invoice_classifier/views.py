@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import csv
 import io
-import json
 from calendar import monthrange
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.core.files.base import ContentFile
-from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection, transaction
 from django.db.models import Sum
 from django.db.utils import DatabaseError
@@ -128,8 +126,6 @@ def visualizer(request: HttpRequest) -> HttpResponse:
             }
         )
 
-    chart_payload = json.dumps(chart_entries, cls=DjangoJSONEncoder)
-
     available_years_qs = BankTransaction.objects.filter(booking_date__isnull=False).dates(
         "booking_date", "year", order="ASC"
     )
@@ -147,7 +143,6 @@ def visualizer(request: HttpRequest) -> HttpResponse:
         "selected_month": selected_month,
         "period_label": period_label,
         "chart_entries": chart_entries,
-        "chart_payload": chart_payload,
         "available_years": available_years,
         "month_choices": month_choices,
     }
