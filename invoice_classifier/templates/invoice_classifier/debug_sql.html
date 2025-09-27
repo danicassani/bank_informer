@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Consola SQL</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.5;
+      }
+
+      body {
+        margin: 2rem auto;
+        max-width: 960px;
+        padding: 0 1rem 3rem;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 8rem;
+        font-family: "Fira Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo,
+          monospace;
+        font-size: 0.95rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1.5rem;
+      }
+
+      th,
+      td {
+        border: 1px solid currentColor;
+        padding: 0.5rem 0.75rem;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      thead {
+        background: rgba(127, 127, 127, 0.2);
+      }
+
+      .actions {
+        margin-top: 0.75rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .error {
+        border-left: 4px solid #e53935;
+        background: rgba(229, 57, 53, 0.1);
+        padding: 0.75rem 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .summary {
+        margin-top: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Consola SQL de depuración</h1>
+    <p>
+      Ejecuta consultas SQL directamente contra la base de datos del proyecto. Úsalo sólo en
+      entornos de desarrollo.
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      <label for="id-query"><strong>Consulta SQL</strong></label>
+      <textarea id="id-query" name="query" placeholder="SELECT * FROM ...">{{ query }}</textarea>
+      <div class="actions">
+        <button type="submit">Ejecutar</button>
+        {% if rowcount is not None %}
+        <span class="summary">Filas afectadas: {{ rowcount }}</span>
+        {% endif %}
+      </div>
+    </form>
+
+    {% if error_message %}
+    <div class="error">
+      <strong>Error al ejecutar la consulta:</strong>
+      <div>{{ error_message }}</div>
+    </div>
+    {% endif %}
+
+    {% if rows %}
+    <table>
+      <thead>
+        <tr>
+          {% for column in columns %}
+          <th>{{ column }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          {% for value in row %}
+          <td>{{ value }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% elif columns %}
+    <p class="summary">La consulta se ejecutó correctamente pero no devolvió registros.</p>
+    {% endif %}
+  </body>
+</html>
