@@ -216,8 +216,8 @@
 
             {% for field in create_form %}
               <div>
-                <label for="id_create_{{ field.name }}">{{ field.label }}</label>
-                {{ field.as_widget(attrs={"id": "id_create_"|add:field.name}) }}
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
                 {% if field.help_text %}
                   <p class="helptext">{{ field.help_text }}</p>
                 {% endif %}
@@ -240,8 +240,8 @@
 
               {% for field in edit_form %}
                 <div>
-                  <label for="id_edit_{{ field.name }}">{{ field.label }}</label>
-                  {{ field.as_widget(attrs={"id": "id_edit_"|add:field.name}) }}
+                  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                  {{ field }}
                   {% if field.help_text %}
                     <p class="helptext">{{ field.help_text }}</p>
                   {% endif %}

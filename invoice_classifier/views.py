@@ -195,7 +195,7 @@ def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
     )
     unclassified_count = unclassified_transactions_qs.count()
 
-    create_form = ClassificationCriterionForm()
+    create_form = ClassificationCriterionForm(prefix="create")
     edit_form: ClassificationCriterionForm | None = None
     edit_instance: ClassificationCriterion | None = None
 
@@ -205,10 +205,12 @@ def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
             edit_instance = get_object_or_404(
                 ClassificationCriterion, pk=request.POST.get("criterion_id")
             )
-            edit_form = ClassificationCriterionForm(request.POST, instance=edit_instance)
+            edit_form = ClassificationCriterionForm(
+                request.POST, instance=edit_instance, prefix="edit"
+            )
             form = edit_form
         else:
-            form = ClassificationCriterionForm(request.POST)
+            form = ClassificationCriterionForm(request.POST, prefix="create")
             create_form = form
 
         if form.is_valid():
@@ -236,7 +238,7 @@ def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
         edit_id = request.GET.get("edit")
         if edit_id:
             edit_instance = get_object_or_404(ClassificationCriterion, pk=edit_id)
-            edit_form = ClassificationCriterionForm(instance=edit_instance)
+            edit_form = ClassificationCriterionForm(instance=edit_instance, prefix="edit")
 
     context = {
         "criteria_list": criteria_list,
