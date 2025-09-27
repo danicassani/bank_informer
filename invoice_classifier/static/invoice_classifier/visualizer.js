@@ -56,6 +56,23 @@
     });
   }
 
+  function hexToRgba(hex, alpha = 1) {
+    if (!/^#([0-9a-f]{3}){1,2}$/i.test(hex)) {
+      return hex;
+    }
+
+    const normalized = hex.replace('#', '');
+    const step = normalized.length === 3 ? 1 : 2;
+    const expand = (value) =>
+      step === 1 ? parseInt(value.repeat(2), 16) : parseInt(value, 16);
+
+    const r = expand(normalized.substring(0, step));
+    const g = expand(normalized.substring(step, step * 2));
+    const b = expand(normalized.substring(step * 2, step * 3));
+
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
   function renderChart(container, parsed, onBarClick) {
     if (!container || !Array.isArray(parsed) || parsed.length === 0) {
       return;
@@ -74,6 +91,9 @@
       return;
     }
 
+    const baseBackground = colors.map((color) => hexToRgba(color, 0.55));
+    let selectedIndex = null;
+
     const chart = new window.Chart(ctx, {
       type: 'bar',
       data: {
@@ -82,7 +102,8 @@
           {
             label: 'Gasto',
             data,
-            backgroundColor: colors,
+            backgroundColor: baseBackground,
+            hoverBackgroundColor: colors,
             borderRadius: 8,
           },
         ],
@@ -128,31 +149,40 @@
             },
           },
         },
-      },
-      onHover(event, elements) {
-        const canvas = event && event.chart ? event.chart.canvas : null;
-        if (!canvas) {
-          return;
-        }
+        onHover(event, elements) {
+          const canvas = event && event.chart ? event.chart.canvas : null;
+          if (!canvas) {
+            return;
+          }
 
-        canvas.style.cursor = elements.length ? 'pointer' : 'default';
-      },
-      onClick(_event, elements) {
-        if (!elements || elements.length === 0 || typeof onBarClick !== 'function') {
-          return;
-        }
+          canvas.style.cursor = elements.length ? 'pointer' : 'default';
+        },
+        onClick(_event, elements) {
+          if (!elements || elements.length === 0 || typeof onBarClick !== 'function') {
+            return;
+          }
 
-        const index = elements[0].index;
-        if (typeof index !== 'number') {
-          return;
-        }
+          const index = elements[0].index;
+          if (typeof index !== 'number') {
+            return;
+          }
 
-        const entry = parsed[index];
-        if (!entry) {
-          return;
-        }
+          const entry = parsed[index];
+          if (!entry) {
+            return;
+          }
 
-        onBarClick(entry, index);
+          selectedIndex = index;
+          const dataset = chart.data.datasets[0];
+          if (dataset) {
+            dataset.backgroundColor = colors.map((color, idx) =>
+              idx === selectedIndex ? color : hexToRgba(color, 0.35)
+            );
+            chart.update();
+          }
+
+          onBarClick(entry, index);
+        },
       },
     });
 
