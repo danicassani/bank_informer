@@ -7,15 +7,18 @@ import io
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
+from django.contrib import messages
 from django.core.files.base import ContentFile
 from django.db import connection, transaction
 from django.db.utils import DatabaseError
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 
-from .models import BankTransaction, StatementImport
+from .forms import ClassificationCriterionForm
+from .models import BankTransaction, ClassificationCriterion, StatementImport
 
 
 @ensure_csrf_cookie
@@ -177,3 +180,71 @@ def debug_sql_console(request: HttpRequest) -> HttpResponse:
     }
 
     return render(request, "invoice_classifier/debug_sql.html", context)
+
+
+@require_http_methods(["GET", "POST"])
+@ensure_csrf_cookie
+def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
+    """Allow users to create and update classification criteria."""
+
+    criteria_list = ClassificationCriterion.objects.all().order_by("name")
+    unclassified_transactions_qs = (
+        BankTransaction.objects.filter(classifications__isnull=True)
+        .select_related("statement")
+        .order_by("-booking_date", "-id")
+    )
+    unclassified_count = unclassified_transactions_qs.count()
+
+    create_form = ClassificationCriterionForm()
+    edit_form: ClassificationCriterionForm | None = None
+    edit_instance: ClassificationCriterion | None = None
+
+    if request.method == "POST":
+        mode = request.POST.get("mode", "create")
+        if mode == "update":
+            edit_instance = get_object_or_404(
+                ClassificationCriterion, pk=request.POST.get("criterion_id")
+            )
+            edit_form = ClassificationCriterionForm(request.POST, instance=edit_instance)
+            form = edit_form
+        else:
+            form = ClassificationCriterionForm(request.POST)
+            create_form = form
+
+        if form.is_valid():
+            criterion = form.save()
+            classified_count = criterion.classify_unclassified_transactions()
+            if mode == "update":
+                messages.success(
+                    request,
+                    (
+                        f"Criterio «{criterion.name}» actualizado. "
+                        f"{classified_count} movimientos clasificados automáticamente."
+                    ),
+                )
+                return redirect(f"{reverse('manage_classification_criteria')}?edit={criterion.pk}")
+
+            messages.success(
+                request,
+                (
+                    f"Criterio «{criterion.name}» creado. "
+                    f"{classified_count} movimientos clasificados automáticamente."
+                ),
+            )
+            return redirect(reverse("manage_classification_criteria"))
+    else:
+        edit_id = request.GET.get("edit")
+        if edit_id:
+            edit_instance = get_object_or_404(ClassificationCriterion, pk=edit_id)
+            edit_form = ClassificationCriterionForm(instance=edit_instance)
+
+    context = {
+        "criteria_list": criteria_list,
+        "create_form": create_form,
+        "edit_form": edit_form,
+        "edit_instance": edit_instance,
+        "unclassified_transactions": unclassified_transactions_qs,
+        "unclassified_count": unclassified_count,
+    }
+
+    return render(request, "invoice_classifier/manage_criteria.html", context)
