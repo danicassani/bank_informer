@@ -29,6 +29,39 @@
   color: #1d4ed8;
 }
 
+.visualizer__tabs {
+  display: inline-flex;
+  gap: 0.5rem;
+  background: #e2e8f0;
+  padding: 0.35rem;
+  border-radius: 999px;
+  align-self: flex-start;
+}
+
+.visualizer__tab {
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.visualizer__tab:hover {
+  color: #0f172a;
+}
+
+.visualizer__tab--active {
+  background: white;
+  color: #1d4ed8;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+
+.visualizer__tab:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 .controls {
   background: white;
   border-radius: 16px;
@@ -140,6 +173,10 @@
 .criteria-list__item input {
   width: 1.05rem;
   height: 1.05rem;
+}
+
+.criteria-list__item--radio input {
+  border-radius: 999px;
 }
 
 .controls__submit {

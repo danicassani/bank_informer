@@ -363,10 +363,11 @@
       return;
     }
 
-    const monthSelect = form.querySelector('#month-select');
+    const monthSelect = form.querySelector('[data-month-select]');
     const modeInputs = form.querySelectorAll('input[name="mode"]');
     const criteriaInputs = form.querySelectorAll('input[name="criteria"]');
-    const yearSelect = form.querySelector('#year-select');
+    const singleCriterionInputs = form.querySelectorAll('input[name="criterion"]');
+    const yearSelect = form.querySelector('[data-year-select]');
 
     const submitForm = () => {
       if (typeof form.requestSubmit === 'function') {
@@ -376,13 +377,11 @@
       }
     };
 
-    const updateMonthAvailability = () => {
+    const updatePeriodControls = () => {
       const selectedMode = form.querySelector('input[name="mode"]:checked');
-      if (!monthSelect || !selectedMode) {
-        return;
+      if (monthSelect) {
+        monthSelect.disabled = !!selectedMode && selectedMode.value === 'yearly';
       }
-
-      monthSelect.disabled = selectedMode.value === 'yearly';
     };
 
     if (monthSelect) {
@@ -395,7 +394,7 @@
 
     modeInputs.forEach((input) => {
       input.addEventListener('change', () => {
-        updateMonthAvailability();
+        updatePeriodControls();
         submitForm();
       });
     });
@@ -404,6 +403,10 @@
       input.addEventListener('change', submitForm);
     });
 
-    updateMonthAvailability();
+    singleCriterionInputs.forEach((input) => {
+      input.addEventListener('change', submitForm);
+    });
+
+    updatePeriodControls();
   });
 })();
