@@ -111,5 +111,53 @@
     const container = document.querySelector('.chart-card__inner');
     const chartData = readChartData();
     renderChart(container, chartData);
+
+    const form = document.querySelector('.controls');
+    if (!form) {
+      return;
+    }
+
+    const monthSelect = form.querySelector('#month-select');
+    const modeInputs = form.querySelectorAll('input[name="mode"]');
+    const criteriaInputs = form.querySelectorAll('input[name="criteria"]');
+    const yearSelect = form.querySelector('#year-select');
+
+    const submitForm = () => {
+      if (typeof form.requestSubmit === 'function') {
+        form.requestSubmit();
+      } else {
+        form.submit();
+      }
+    };
+
+    const updateMonthAvailability = () => {
+      const selectedMode = form.querySelector('input[name="mode"]:checked');
+      if (!monthSelect || !selectedMode) {
+        return;
+      }
+
+      monthSelect.disabled = selectedMode.value === 'yearly';
+    };
+
+    if (monthSelect) {
+      monthSelect.addEventListener('change', submitForm);
+    }
+
+    if (yearSelect) {
+      yearSelect.addEventListener('change', submitForm);
+    }
+
+    modeInputs.forEach((input) => {
+      input.addEventListener('change', () => {
+        updateMonthAvailability();
+        submitForm();
+      });
+    });
+
+    criteriaInputs.forEach((input) => {
+      input.addEventListener('change', submitForm);
+    });
+
+    updateMonthAvailability();
   });
 })();
