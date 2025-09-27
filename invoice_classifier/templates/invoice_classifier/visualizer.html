@@ -23,103 +23,219 @@
       <p class="visualizer__period">Periodo seleccionado: <strong>{{ period_label }}</strong></p>
     </header>
 
-    <form class="controls" method="get">
-      <div class="controls__group controls__group--period">
-        <div class="field">
-          <label for="month-select">Mes</label>
-          <select id="month-select" name="month" {% if view_mode == 'yearly' %}disabled{% endif %}>
-            {% for value, label in month_choices %}
-              <option value="{{ value }}" {% if value == selected_month %}selected{% endif %}>
-                {{ label }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="field">
-          <label for="year-select">Año</label>
-          <select id="year-select" name="year">
-            {% for year in available_years %}
-              <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="field field--toggle">
-          <span>Modo</span>
-          <div class="toggle">
-            <label>
-              <input type="radio" name="mode" value="monthly" {% if view_mode == 'monthly' %}checked{% endif %} />
-              <span>Mensual</span>
-            </label>
-            <label>
-              <input type="radio" name="mode" value="yearly" {% if view_mode == 'yearly' %}checked{% endif %} />
-              <span>Anual</span>
-            </label>
-          </div>
-        </div>
-      </div>
+    <nav class="visualizer__tabs" role="tablist">
+      <a
+        class="visualizer__tab {% if active_tab == 'all' %}visualizer__tab--active{% endif %}"
+        href="{{ tab_links.all }}"
+        role="tab"
+        aria-selected="{% if active_tab == 'all' %}true{% else %}false{% endif %}"
+      >
+        All
+      </a>
+      <a
+        class="visualizer__tab {% if active_tab == 'single' %}visualizer__tab--active{% endif %}"
+        href="{{ tab_links.single }}"
+        role="tab"
+        aria-selected="{% if active_tab == 'single' %}true{% else %}false{% endif %}"
+      >
+        One by One
+      </a>
+    </nav>
 
-      <div class="visualizer__board">
-        <fieldset class="controls__group controls__group--criteria">
-          <legend>Selecciona criterios</legend>
-          <div class="criteria-list">
-            {% for criterion in criteria_list %}
-              <label class="criteria-list__item">
-                <input
-                  type="checkbox"
-                  name="criteria"
-                  value="{{ criterion.slug }}"
-                  {% if criterion.slug in selected_criteria_slugs %}checked{% endif %}
-                />
-                <span>{{ criterion.name }}</span>
+    {% if active_tab == 'all' %}
+      <form class="controls" method="get" data-tab="all">
+        <input type="hidden" name="tab" value="all" />
+        <div class="controls__group controls__group--period">
+          <div class="field">
+            <label for="month-select">Mes</label>
+            <select
+              id="month-select"
+              name="month"
+              data-month-select
+              {% if view_mode == 'yearly' %}disabled{% endif %}
+            >
+              {% for value, label in month_choices %}
+                <option value="{{ value }}" {% if value == selected_month %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="year-select">Año</label>
+            <select id="year-select" name="year" data-year-select>
+              {% for year in available_years %}
+                <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field field--toggle">
+            <span>Modo</span>
+            <div class="toggle">
+              <label>
+                <input type="radio" name="mode" value="monthly" {% if view_mode == 'monthly' %}checked{% endif %} />
+                <span>Mensual</span>
               </label>
-            {% empty %}
-              <p>No hay criterios definidos todavía.</p>
-            {% endfor %}
-          </div>
-        </fieldset>
-
-        <section class="chart-card visualizer__chart">
-          {% if chart_entries %}
-            {{ chart_entries|json_script:"visualizer-chart-data" }}
-            <div class="chart-card__inner">
-              <canvas id="spending-chart" height="120"></canvas>
+              <label>
+                <input type="radio" name="mode" value="yearly" {% if view_mode == 'yearly' %}checked{% endif %} />
+                <span>Anual</span>
+              </label>
             </div>
-          {% else %}
-            <p class="chart-card__empty">No hay movimientos que coincidan con los filtros seleccionados.</p>
-          {% endif %}
-        </section>
-      </div>
-
-      <section class="visualizer__details" data-details hidden aria-hidden="true">
-        <h2 class="visualizer__details-title">
-          Movimientos de <span data-details-name></span>
-        </h2>
-        <div class="visualizer__details-table-wrapper">
-          <table class="visualizer__details-table">
-            <thead>
-              <tr>
-                <th scope="col" aria-sort="none">
-                  <button type="button" class="visualizer__sort-button" data-sort-key="name">
-                    Nombre
-                  </button>
-                </th>
-                <th scope="col" aria-sort="none">
-                  <button type="button" class="visualizer__sort-button" data-sort-key="date">
-                    Fecha
-                  </button>
-                </th>
-                <th scope="col" aria-sort="none" class="visualizer__details-amount">
-                  <button type="button" class="visualizer__sort-button" data-sort-key="amount">
-                    Importe
-                  </button>
-                </th>
-              </tr>
-            </thead>
-            <tbody data-details-body></tbody>
-          </table>
+          </div>
         </div>
-      </section>
-    </form>
+
+        <div class="visualizer__board">
+          <fieldset class="controls__group controls__group--criteria">
+            <legend>Selecciona criterios</legend>
+            <div class="criteria-list">
+              {% for criterion in criteria_list %}
+                <label class="criteria-list__item">
+                  <input
+                    type="checkbox"
+                    name="criteria"
+                    value="{{ criterion.slug }}"
+                    {% if criterion.slug in selected_criteria_slugs %}checked{% endif %}
+                  />
+                  <span>{{ criterion.name }}</span>
+                </label>
+              {% empty %}
+                <p>No hay criterios definidos todavía.</p>
+              {% endfor %}
+            </div>
+          </fieldset>
+
+          <section class="chart-card visualizer__chart">
+            {% if chart_entries %}
+              {{ chart_entries|json_script:"visualizer-chart-data" }}
+              <div class="chart-card__inner">
+                <canvas id="spending-chart" height="120"></canvas>
+              </div>
+            {% else %}
+              <p class="chart-card__empty">No hay movimientos que coincidan con los filtros seleccionados.</p>
+            {% endif %}
+          </section>
+        </div>
+
+        <section class="visualizer__details" data-details hidden aria-hidden="true">
+          <h2 class="visualizer__details-title">
+            Movimientos de <span data-details-name></span>
+          </h2>
+          <div class="visualizer__details-table-wrapper">
+            <table class="visualizer__details-table">
+              <thead>
+                <tr>
+                  <th scope="col" aria-sort="none">
+                    <button type="button" class="visualizer__sort-button" data-sort-key="name">
+                      Nombre
+                    </button>
+                  </th>
+                  <th scope="col" aria-sort="none">
+                    <button type="button" class="visualizer__sort-button" data-sort-key="date">
+                      Fecha
+                    </button>
+                  </th>
+                  <th scope="col" aria-sort="none" class="visualizer__details-amount">
+                    <button type="button" class="visualizer__sort-button" data-sort-key="amount">
+                      Importe
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody data-details-body></tbody>
+            </table>
+          </div>
+        </section>
+      </form>
+    {% else %}
+      <form class="controls" method="get" data-tab="single">
+        <input type="hidden" name="tab" value="single" />
+        <div class="controls__group controls__group--period">
+          <div class="field">
+            <label for="single-year-select">Año</label>
+            <select id="single-year-select" name="year" data-year-select>
+              {% for year in available_years %}
+                <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field field--toggle">
+            <span>Modo</span>
+            <div class="toggle">
+              <label>
+                <input type="radio" name="mode" value="monthly" {% if view_mode == 'monthly' %}checked{% endif %} />
+                <span>Mensual</span>
+              </label>
+              <label>
+                <input type="radio" name="mode" value="yearly" {% if view_mode == 'yearly' %}checked{% endif %} />
+                <span>Anual</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="visualizer__board">
+          <fieldset class="controls__group controls__group--criteria">
+            <legend>Selecciona un criterio</legend>
+            <div class="criteria-list">
+              {% for criterion in criteria_list %}
+                <label class="criteria-list__item criteria-list__item--radio">
+                  <input
+                    type="radio"
+                    name="criterion"
+                    value="{{ criterion.slug }}"
+                    {% if criterion.slug == selected_criterion_slug %}checked{% endif %}
+                  />
+                  <span>{{ criterion.name }}</span>
+                </label>
+              {% empty %}
+                <p>No hay criterios definidos todavía.</p>
+              {% endfor %}
+            </div>
+          </fieldset>
+
+          <section class="chart-card visualizer__chart">
+            {% if chart_entries %}
+              {{ chart_entries|json_script:"visualizer-chart-data" }}
+              <div class="chart-card__inner">
+                <canvas id="spending-chart" height="120"></canvas>
+              </div>
+            {% else %}
+              <p class="chart-card__empty">No hay movimientos que coincidan con los filtros seleccionados.</p>
+            {% endif %}
+          </section>
+        </div>
+
+        <section class="visualizer__details" data-details hidden aria-hidden="true">
+          <h2 class="visualizer__details-title">
+            Movimientos de <span data-details-name></span>
+          </h2>
+          <div class="visualizer__details-table-wrapper">
+            <table class="visualizer__details-table">
+              <thead>
+                <tr>
+                  <th scope="col" aria-sort="none">
+                    <button type="button" class="visualizer__sort-button" data-sort-key="name">
+                      Nombre
+                    </button>
+                  </th>
+                  <th scope="col" aria-sort="none">
+                    <button type="button" class="visualizer__sort-button" data-sort-key="date">
+                      Fecha
+                    </button>
+                  </th>
+                  <th scope="col" aria-sort="none" class="visualizer__details-amount">
+                    <button type="button" class="visualizer__sort-button" data-sort-key="amount">
+                      Importe
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody data-details-body></tbody>
+            </table>
+          </div>
+        </section>
+      </form>
+    {% endif %}
   </section>
 {% endblock %}
 
