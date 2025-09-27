@@ -15,7 +15,7 @@ body.index-body {
   justify-content: center;
   width: min(780px, 100%);
   min-height: calc(100vh - 180px);
-  padding: 3rem 0;
+  padding: 0rem 0rem 15rem 0rem;
 }
 
 #index-app,
