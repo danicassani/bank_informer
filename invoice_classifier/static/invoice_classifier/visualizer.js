@@ -91,7 +91,10 @@
       return;
     }
 
-    const baseBackground = colors.map((color) => hexToRgba(color, 0.55));
+    const defaultBackground = colors.slice();
+    const defaultHoverBackground = colors.map((color) =>
+      hexToRgba(color, 0.55)
+    );
     let selectedIndex = null;
 
     const chart = new window.Chart(ctx, {
@@ -102,8 +105,8 @@
           {
             label: 'Gasto',
             data,
-            backgroundColor: baseBackground,
-            hoverBackgroundColor: colors,
+            backgroundColor: defaultBackground,
+            hoverBackgroundColor: defaultHoverBackground,
             borderRadius: 8,
           },
         ],
@@ -177,6 +180,9 @@
           if (dataset) {
             dataset.backgroundColor = colors.map((color, idx) =>
               idx === selectedIndex ? color : hexToRgba(color, 0.35)
+            );
+            dataset.hoverBackgroundColor = colors.map((color, idx) =>
+              idx === selectedIndex ? hexToRgba(color, 0.55) : hexToRgba(color, 0.25)
             );
             chart.update();
           }
