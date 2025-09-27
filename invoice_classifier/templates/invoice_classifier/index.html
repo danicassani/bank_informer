@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Invoice Classifier</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+    </style>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" defer></script>
+    <script src="{% static 'invoice_classifier/index.js' %}" defer></script>
+</head>
+<body>
+    <main class="container" id="invoice-classifier-app" v-cloak>
+        <article>
+            <h1>Invoice Classifier</h1>
+            <form @submit.prevent="classifyInvoice">
+                <label for="invoice-text">Invoice text</label>
+                <textarea id="invoice-text" v-model="invoiceText" rows="8" placeholder="Paste invoice text here"></textarea>
+                <div class="grid">
+                    <button type="submit" :aria-busy="loading ? 'true' : 'false'" :disabled="loading">
+                        [[ loading ? 'Classifying…' : 'Classify invoice' ]]
+                    </button>
+                    <button type="button" class="secondary" @click="resetForm" :disabled="loading">
+                        Clear
+                    </button>
+                </div>
+            </form>
+
+            <section v-if="error" class="contrast" style="margin-top: 1rem;">
+                <h2>Error</h2>
+                <p>[[ error ]]</p>
+            </section>
+
+            <section v-if="classification" style="margin-top: 1rem;">
+                <h2>Classification</h2>
+                <pre><code>[[ formattedClassification ]]</code></pre>
+            </section>
+        </article>
+    </main>
+</body>
+</html>
