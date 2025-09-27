@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 
 class StatementImport(models.Model):
@@ -85,6 +85,25 @@ class ClassificationCriterion(models.Model):
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=100, unique=True)
     description = models.TextField(blank=True)
+    concept_keywords = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Lista de conceptos o palabras clave asociadas al criterio.",
+    )
+    min_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Importe mínimo (inclusive) para considerar el criterio.",
+    )
+    max_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Importe máximo (inclusive) para considerar el criterio.",
+    )
 
     class Meta:
         ordering = ("name",)
@@ -93,6 +112,102 @@ class ClassificationCriterion(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    def normalized_keywords(self) -> list[str]:
+        """Return the list of keywords in lowercase without empty values."""
+
+        raw_keywords = self.concept_keywords or []
+        normalized: list[str] = []
+        for keyword in raw_keywords:
+            value = str(keyword).strip()
+            if value:
+                normalized.append(value.lower())
+        return normalized
+
+    def matches_transaction(self, transaction: "BankTransaction") -> bool:
+        """Return ``True`` if the given transaction matches this criterion."""
+
+        keywords = self.normalized_keywords()
+        if keywords:
+            concept_parts = [
+                (transaction.normalized_concept or "").lower(),
+                (transaction.concept or "").lower(),
+            ]
+            concept_text = " ".join(part for part in concept_parts if part)
+            if not any(keyword in concept_text for keyword in keywords):
+                return False
+
+        if self.min_amount is not None and transaction.amount < self.min_amount:
+            return False
+
+        if self.max_amount is not None and transaction.amount > self.max_amount:
+            return False
+
+        return True
+
+    def get_or_create_default_label(self) -> "ClassificationLabel":
+        """Return a label to use for automatic classifications."""
+
+        default_slug = f"auto-{self.slug}"
+        label = self.labels.filter(slug=default_slug).first()
+        if label:
+            update_fields: list[str] = []
+            if label.name != self.name:
+                label.name = self.name
+                update_fields.append("name")
+            description = self.description or "Etiqueta generada automáticamente a partir del criterio."
+            if label.description != description:
+                label.description = description
+                update_fields.append("description")
+            if update_fields:
+                label.save(update_fields=update_fields)
+            return label
+
+        fallback = self.labels.filter(slug__startswith="auto-").first()
+        if fallback:
+            fallback.slug = default_slug
+            fallback.name = self.name
+            fallback.description = (
+                self.description or "Etiqueta generada automáticamente a partir del criterio."
+            )
+            fallback.save(update_fields=["slug", "name", "description"])
+            return fallback
+
+        return self.labels.create(
+            name=self.name,
+            slug=default_slug,
+            description=self.description or "Etiqueta generada automáticamente a partir del criterio.",
+        )
+
+    def classify_unclassified_transactions(self) -> int:
+        """Classify unclassified transactions that match this criterion."""
+
+        label = self.get_or_create_default_label()
+        unclassified = (
+            BankTransaction.objects.filter(classifications__isnull=True)
+            .only("id", "concept", "normalized_concept", "amount")
+            .iterator(chunk_size=200)
+        )
+
+        to_create: list["TransactionClassification"] = []
+        for bank_transaction in unclassified:
+            if self.matches_transaction(bank_transaction):
+                to_create.append(
+                    TransactionClassification(
+                        transaction=bank_transaction,
+                        label=label,
+                        source=TransactionClassification.Sources.AUTOMATIC,
+                        confidence=1,
+                    )
+                )
+
+        if not to_create:
+            return 0
+
+        with transaction.atomic():
+            TransactionClassification.objects.bulk_create(to_create, ignore_conflicts=True)
+
+        return len(to_create)
 
 
 class ClassificationLabel(models.Model):
