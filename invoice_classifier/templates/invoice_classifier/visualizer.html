@@ -1,0 +1,101 @@
+{% extends "invoice_classifier/base.html" %}
+{% load static %}
+
+{% block title %}Visualizador de gastos{% endblock %}
+
+{% block navbar %}
+  {% include "invoice_classifier/partials/navbar.html" with active_page="visualizer" %}
+{% endblock %}
+
+{% block extra_head %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'invoice_classifier/visualizer.css' %}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+{% endblock %}
+
+{% block content %}
+  <section class="visualizer">
+    <header class="visualizer__header">
+      <div>
+        <h1>Visualizador de gastos</h1>
+        <p class="visualizer__subtitle">Filtra por periodo y criterios para ver cuánto has gastado.</p>
+      </div>
+      <p class="visualizer__period">Periodo seleccionado: <strong>{{ period_label }}</strong></p>
+    </header>
+
+    <form class="controls" method="get">
+      <div class="controls__group controls__group--period">
+        <div class="field">
+          <label for="month-select">Mes</label>
+          <select id="month-select" name="month" {% if view_mode == 'yearly' %}disabled{% endif %}>
+            {% for value, label in month_choices %}
+              <option value="{{ value }}" {% if value == selected_month %}selected{% endif %}>
+                {{ label }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="year-select">Año</label>
+          <select id="year-select" name="year">
+            {% for year in available_years %}
+              <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field field--toggle">
+          <span>Modo</span>
+          <div class="toggle">
+            <label>
+              <input type="radio" name="mode" value="monthly" {% if view_mode == 'monthly' %}checked{% endif %} />
+              <span>Mensual</span>
+            </label>
+            <label>
+              <input type="radio" name="mode" value="yearly" {% if view_mode == 'yearly' %}checked{% endif %} />
+              <span>Anual</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="visualizer__board">
+        <fieldset class="controls__group controls__group--criteria">
+          <legend>Selecciona criterios</legend>
+          <div class="criteria-list">
+            {% for criterion in criteria_list %}
+              <label class="criteria-list__item">
+                <input
+                  type="checkbox"
+                  name="criteria"
+                  value="{{ criterion.slug }}"
+                  {% if criterion.slug in selected_criteria_slugs %}checked{% endif %}
+                />
+                <span>{{ criterion.name }}</span>
+              </label>
+            {% empty %}
+              <p>No hay criterios definidos todavía.</p>
+            {% endfor %}
+          </div>
+        </fieldset>
+
+        <section class="chart-card visualizer__chart">
+          {% if chart_entries %}
+            {{ chart_entries|json_script:"visualizer-chart-data" }}
+            <div class="chart-card__inner">
+              <canvas id="spending-chart" height="120"></canvas>
+            </div>
+          {% else %}
+            <p class="chart-card__empty">No hay movimientos que coincidan con los filtros seleccionados.</p>
+          {% endif %}
+        </section>
+      </div>
+
+      <button type="submit" class="controls__submit">Actualizar visualización</button>
+    </form>
+  </section>
+{% endblock %}
+
+{% block extra_scripts %}
+  {{ block.super }}
+  <script src="{% static 'invoice_classifier/visualizer.js' %}" defer></script>
+{% endblock %}
