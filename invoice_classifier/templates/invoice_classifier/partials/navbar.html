@@ -13,6 +13,11 @@
         </a>
       </li>
       <li>
+        <a href="{% url 'visualizer' %}" class="{% if active_page == 'visualizer' %}is-active{% endif %}">
+          Visualizador
+        </a>
+      </li>
+      <li>
         <a href="{% url 'debug_sql_console' %}" class="{% if active_page == 'sql' %}is-active{% endif %}">
           SQL
         </a>

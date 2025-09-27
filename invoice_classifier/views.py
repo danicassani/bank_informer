@@ -4,21 +4,31 @@ from __future__ import annotations
 
 import csv
 import io
-from datetime import datetime
+import json
+from calendar import monthrange
+from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.core.files.base import ContentFile
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection, transaction
+from django.db.models import Sum
 from django.db.utils import DatabaseError
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
+from django.utils import timezone
 
 from .forms import ClassificationCriterionForm
-from .models import BankTransaction, ClassificationCriterion, StatementImport
+from .models import (
+    BankTransaction,
+    ClassificationCriterion,
+    StatementImport,
+    TransactionClassification,
+)
 
 
 @ensure_csrf_cookie
@@ -26,6 +36,127 @@ def index(request: HttpRequest) -> HttpResponse:
     """Render the Vue-powered index page."""
 
     return render(request, "invoice_classifier/index.html")
+
+
+MONTH_NAMES_ES = [
+    "",
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+]
+
+
+@ensure_csrf_cookie
+def visualizer(request: HttpRequest) -> HttpResponse:
+    """Display aggregated spending per criterion using interactive controls."""
+
+    today = timezone.localdate()
+    view_mode = request.GET.get("mode", "monthly")
+    if view_mode not in {"monthly", "yearly"}:
+        view_mode = "monthly"
+
+    try:
+        selected_year = int(request.GET.get("year", today.year))
+    except (TypeError, ValueError):
+        selected_year = today.year
+
+    try:
+        selected_month = int(request.GET.get("month", today.month))
+    except (TypeError, ValueError):
+        selected_month = today.month
+
+    if not 1 <= selected_month <= 12:
+        selected_month = today.month
+
+    criteria_qs = ClassificationCriterion.objects.all().order_by("name")
+    available_criteria_slugs = list(criteria_qs.values_list("slug", flat=True))
+
+    requested_slugs = [slug for slug in request.GET.getlist("criteria") if slug]
+    if requested_slugs:
+        selected_criteria_slugs = [
+            slug for slug in requested_slugs if slug in available_criteria_slugs
+        ]
+    else:
+        selected_criteria_slugs = available_criteria_slugs.copy()
+
+    selected_criteria = list(
+        criteria_qs.filter(slug__in=selected_criteria_slugs).order_by("name")
+    )
+
+    if view_mode == "monthly":
+        period_start = date(selected_year, selected_month, 1)
+        _, days_in_month = monthrange(selected_year, selected_month)
+        period_end = period_start + timedelta(days=days_in_month)
+        period_label = f"{MONTH_NAMES_ES[period_start.month]} {period_start.year}"
+    else:
+        period_start = date(selected_year, 1, 1)
+        period_end = date(selected_year + 1, 1, 1)
+        period_label = f"{selected_year}"
+
+    classifications = TransactionClassification.objects.filter(
+        label__criterion__in=selected_criteria,
+        transaction__booking_date__gte=period_start,
+        transaction__booking_date__lt=period_end,
+        transaction__amount__lt=0,
+    )
+
+    aggregated_spending = (
+        classifications.values(
+            "label__criterion__name", "label__criterion__slug", "label__criterion_id"
+        )
+        .annotate(total_spent=Sum("transaction__amount"))
+        .order_by("label__criterion__name")
+    )
+
+    chart_entries: list[dict[str, object]] = []
+    for entry in aggregated_spending:
+        total_spent = entry.get("total_spent") or Decimal("0")
+        chart_entries.append(
+            {
+                "slug": entry["label__criterion__slug"],
+                "name": entry["label__criterion__name"],
+                "total": float(-total_spent),
+            }
+        )
+
+    chart_payload = json.dumps(chart_entries, cls=DjangoJSONEncoder)
+
+    available_years_qs = BankTransaction.objects.filter(booking_date__isnull=False).dates(
+        "booking_date", "year", order="ASC"
+    )
+    available_years = [dt.year for dt in available_years_qs]
+    if not available_years:
+        available_years = [today.year]
+
+    month_choices = [(index, MONTH_NAMES_ES[index]) for index in range(1, 13)]
+
+    context = {
+        "criteria_list": criteria_qs,
+        "selected_criteria_slugs": selected_criteria_slugs,
+        "view_mode": view_mode,
+        "selected_year": selected_year,
+        "selected_month": selected_month,
+        "period_label": period_label,
+        "chart_entries": chart_entries,
+        "chart_payload": chart_payload,
+        "available_years": available_years,
+        "month_choices": month_choices,
+    }
+
+    return render(
+        request,
+        "invoice_classifier/visualizer.html",
+        context,
+    )
 
 
 def _parse_decimal(value: str) -> Decimal:
