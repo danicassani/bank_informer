@@ -3,15 +3,24 @@
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-body {
+body.index-body {
   margin: 0;
   background: #0f172a;
   color: #f8fafc;
-  min-height: 100vh;
+}
+
+.content--index {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
+  width: min(780px, 100%);
+  min-height: calc(100vh - 180px);
+  padding: 3rem 0;
+}
+
+#index-app,
+#app {
+  width: 100%;
 }
 
 .card {
@@ -117,4 +126,15 @@ button[disabled] {
 
 .result dd {
   margin: 0 0 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 2rem 1.5rem;
+  }
+
+  .content--index {
+    padding: 2.5rem 0;
+    min-height: calc(100vh - 200px);
+  }
 }
