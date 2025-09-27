@@ -4,7 +4,8 @@ from . import views
 
 urlpatterns = [
     path("", views.index, name="index"),
-    path("visualizador/", views.visualizer, name="visualizer"),
+    path("visualizador/", views.visualizer, name="visualizer_legacy"),
+    path("upload-csv/", views.upload_csv, name="upload_csv"),
     path("api/imports/", views.upload_statement, name="upload_statement"),
     path("debug/sql/", views.debug_sql_console, name="debug_sql_console"),
     path(
