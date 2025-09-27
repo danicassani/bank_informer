@@ -1,24 +1,115 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}Bank Informer{% endblock %}</title>
+    <script>
+      (function () {
+        try {
+          var storageKey = "bank-informer-theme";
+          var storedTheme = localStorage.getItem(storageKey);
+          var prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+          var theme = storedTheme || (prefersDark.matches ? "dark" : "light");
+          var docEl = document.documentElement;
+          docEl.setAttribute("data-theme", theme);
+          docEl.style.colorScheme = theme === "dark" ? "dark" : "light";
+        } catch (error) {
+          document.documentElement.setAttribute("data-theme", "light");
+          document.documentElement.style.colorScheme = "light";
+        }
+      })();
+    </script>
     <style>
       :root {
         color-scheme: light;
         font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", sans-serif;
         line-height: 1.5;
-        background-color: #f4f4f5;
+        --color-background: #f4f4f5;
+        --color-on-background: #0f172a;
+        --color-surface: #ffffff;
+        --color-on-surface: #0f172a;
+        --color-surface-elevated: #ffffff;
+        --color-surface-subtle: #f8fafc;
+        --color-muted: #475569;
+        --color-accent: #2563eb;
+        --color-accent-strong: #1d4ed8;
+        --color-accent-soft: rgba(37, 99, 235, 0.15);
+        --color-accent-contrast: #ffffff;
+        --color-border: #e2e8f0;
+        --color-input-bg: #ffffff;
+        --color-input-border: #cbd5f5;
+        --color-input-border-strong: #94a3b8;
+        --color-success-bg: rgba(34, 197, 94, 0.12);
+        --color-success-border: rgba(34, 197, 94, 0.35);
+        --color-success-text: #166534;
+        --color-error-bg: rgba(239, 68, 68, 0.12);
+        --color-error-border: rgba(239, 68, 68, 0.35);
+        --color-error-text: #b91c1c;
+        --color-table-border: #e2e8f0;
+        --color-table-hover: #f8fafc;
+        --color-chart-tab-bg: #e2e8f0;
+        --color-chart-tab-hover-text: #0f172a;
+        --color-chart-tab-active-bg: #ffffff;
+        --color-chart-tab-active-text: #1d4ed8;
+        --shadow-soft: rgba(15, 23, 42, 0.08);
+        --shadow-strong: rgba(15, 23, 42, 0.16);
+        --nav-bg: #1f2937;
+        --nav-text: #f8fafc;
+        --nav-hover-bg: rgba(148, 163, 184, 0.2);
+        --nav-active-bg: #3b82f6;
+        --toggle-border: rgba(148, 163, 184, 0.4);
+        --toggle-hover-border: rgba(148, 163, 184, 0.55);
+        --toggle-hover-bg: rgba(148, 163, 184, 0.15);
+      }
+
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --color-background: #0f172a;
+        --color-on-background: #e2e8f0;
+        --color-surface: #111827;
+        --color-on-surface: #e2e8f0;
+        --color-surface-elevated: rgba(17, 24, 39, 0.95);
+        --color-surface-subtle: rgba(30, 41, 59, 0.65);
+        --color-muted: #94a3b8;
+        --color-accent: #60a5fa;
+        --color-accent-strong: #3b82f6;
+        --color-accent-soft: rgba(96, 165, 250, 0.25);
+        --color-accent-contrast: #0f172a;
+        --color-border: rgba(148, 163, 184, 0.2);
+        --color-input-bg: rgba(15, 23, 42, 0.75);
+        --color-input-border: rgba(148, 163, 184, 0.35);
+        --color-input-border-strong: rgba(148, 163, 184, 0.65);
+        --color-success-bg: rgba(34, 197, 94, 0.18);
+        --color-success-border: rgba(34, 197, 94, 0.35);
+        --color-success-text: #bbf7d0;
+        --color-error-bg: rgba(239, 68, 68, 0.2);
+        --color-error-border: rgba(239, 68, 68, 0.4);
+        --color-error-text: #fecaca;
+        --color-table-border: rgba(148, 163, 184, 0.18);
+        --color-table-hover: rgba(30, 41, 59, 0.65);
+        --color-chart-tab-bg: rgba(148, 163, 184, 0.18);
+        --color-chart-tab-hover-text: #f8fafc;
+        --color-chart-tab-active-bg: rgba(15, 23, 42, 0.45);
+        --color-chart-tab-active-text: #f8fafc;
+        --shadow-soft: rgba(2, 6, 23, 0.55);
+        --shadow-strong: rgba(2, 6, 23, 0.7);
+        --nav-bg: rgba(15, 23, 42, 0.85);
+        --nav-text: #e2e8f0;
+        --nav-hover-bg: rgba(148, 163, 184, 0.25);
+        --nav-active-bg: #2563eb;
+        --toggle-border: rgba(148, 163, 184, 0.35);
+        --toggle-hover-border: rgba(148, 163, 184, 0.6);
+        --toggle-hover-bg: rgba(148, 163, 184, 0.2);
       }
 
       body {
         margin: 0;
         min-height: 100vh;
-        background: #f4f4f5;
-        color: #0f172a;
+        background: var(--color-background);
+        color: var(--color-on-background);
       }
 
       a {
@@ -54,6 +145,85 @@
         {% block content %}{% endblock %}
       </main>
     </div>
+    <script>
+      (function () {
+        var storageKey = "bank-informer-theme";
+        var docEl = document.documentElement;
+        var prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+
+        function applyTheme(theme) {
+          docEl.setAttribute("data-theme", theme);
+          docEl.style.colorScheme = theme === "dark" ? "dark" : "light";
+        }
+
+        function persistTheme(theme) {
+          try {
+            localStorage.setItem(storageKey, theme);
+          } catch (error) {
+            /* localStorage might be unavailable */
+          }
+        }
+
+        function updateToggleButtons(theme) {
+          var isDark = theme === "dark";
+          var icon = isDark ? "☀️" : "🌙";
+          var text = isDark ? "Modo claro" : "Modo oscuro";
+
+          document.querySelectorAll(".js-theme-toggle").forEach(function (button) {
+            button.setAttribute("aria-pressed", isDark ? "true" : "false");
+
+            var iconEl = button.querySelector(".theme-toggle__icon");
+            if (iconEl) {
+              iconEl.textContent = icon;
+            }
+
+            var textEl = button.querySelector(".theme-toggle__text");
+            if (textEl) {
+              textEl.textContent = text;
+            }
+          });
+        }
+
+        function getStoredTheme() {
+          try {
+            return localStorage.getItem(storageKey);
+          } catch (error) {
+            return null;
+          }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+          updateToggleButtons(docEl.getAttribute("data-theme") || "light");
+
+          document
+            .querySelectorAll(".js-theme-toggle")
+            .forEach(function (button) {
+              button.addEventListener("click", function () {
+                var currentTheme = docEl.getAttribute("data-theme") === "dark" ? "dark" : "light";
+                var newTheme = currentTheme === "dark" ? "light" : "dark";
+
+                applyTheme(newTheme);
+                persistTheme(newTheme);
+                updateToggleButtons(newTheme);
+              });
+            });
+        });
+
+        function handlePreferenceChange(event) {
+          if (!getStoredTheme()) {
+            var theme = event.matches ? "dark" : "light";
+            applyTheme(theme);
+            updateToggleButtons(theme);
+          }
+        }
+
+        if (typeof prefersDark.addEventListener === "function") {
+          prefersDark.addEventListener("change", handlePreferenceChange);
+        } else if (typeof prefersDark.addListener === "function") {
+          prefersDark.addListener(handlePreferenceChange);
+        }
+      })();
+    </script>
     {% block extra_scripts %}{% endblock %}
   </body>
 </html>
