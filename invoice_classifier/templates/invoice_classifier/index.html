@@ -1,70 +1,81 @@
-<!DOCTYPE html>
+{% extends "invoice_classifier/base.html" %}
 {% load static %}
-<html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Importador bancario</title>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" defer></script>
-    <link rel="stylesheet" href="{% static 'invoice_classifier/index.css' %}" />
-  </head>
-  <body>
-    <div id="app" data-upload-url="{% url 'upload_statement' %}">
-      <div class="card">
-        <h1>Importador de movimientos bancarios</h1>
-        <p>
-          Sube un CSV exportado de tu banco con las columnas <strong>Concepto</strong>,
-          <strong>Fecha</strong>, <strong>Importe</strong> y <strong>Saldo disponible</strong>.
-        </p>
 
-        <form @submit.prevent="submitForm" novalidate>
-          <div class="form-group">
-            <label for="source-name">Nombre de la importación</label>
-            <input
-              id="source-name"
-              type="text"
-              v-model="sourceName"
-              placeholder="Cuenta corriente principal"
-              autocomplete="off"
-              required
-            />
-          </div>
+{% block title %}Importador bancario{% endblock %}
 
-          <div class="form-group">
-            <label for="csv-file">Archivo CSV</label>
-            <input
-              id="csv-file"
-              type="file"
-              accept=".csv,text/csv"
-              @change="onFileChange"
-              ref="fileInput"
-              required
-            />
-          </div>
+{% block body_class %}index-body{% endblock %}
 
-          <button type="submit" :disabled="isSubmitting || !file">
-            <span v-if="isSubmitting">Procesando…</span>
-            <span v-else>Subir CSV</span>
-          </button>
-        </form>
+{% block content_class %}content--index{% endblock %}
 
-        <div v-if="message" class="message" :class="messageType">
-          {{ message }}
+{% block extra_head %}
+  {{ block.super }}
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js" defer></script>
+  <link rel="stylesheet" href="{% static 'invoice_classifier/index.css' %}" />
+{% endblock %}
+
+{% block navbar %}
+  {% include "invoice_classifier/partials/navbar.html" with active_page="index" %}
+{% endblock %}
+
+{% block content %}
+  <div id="app" data-upload-url="{% url 'upload_statement' %}">
+    <div class="card">
+      <h1>Importador de movimientos bancarios</h1>
+      <p>
+        Sube un CSV exportado de tu banco con las columnas <strong>Concepto</strong>,
+        <strong>Fecha</strong>, <strong>Importe</strong> y <strong>Saldo disponible</strong>.
+      </p>
+
+      <form @submit.prevent="submitForm" novalidate>
+        <div class="form-group">
+          <label for="source-name">Nombre de la importación</label>
+          <input
+            id="source-name"
+            type="text"
+            v-model="sourceName"
+            placeholder="Cuenta corriente principal"
+            autocomplete="off"
+            required
+          />
         </div>
 
-        <dl v-if="result" class="result">
-          <div>
-            <dt>Importación</dt>
-            <dd>#{{ result.statement_id }} · {{ result.file_name }}</dd>
-          </div>
-          <div>
-            <dt>Movimientos creados</dt>
-            <dd>{{ result.transactions_created }}</dd>
-          </div>
-        </dl>
-      </div>
-    </div>
+        <div class="form-group">
+          <label for="csv-file">Archivo CSV</label>
+          <input
+            id="csv-file"
+            type="file"
+            accept=".csv,text/csv"
+            @change="onFileChange"
+            ref="fileInput"
+            required
+          />
+        </div>
 
-    <script src="{% static 'invoice_classifier/statement_upload.js' %}" defer></script>
-  </body>
-</html>
+        <button type="submit" :disabled="isSubmitting || !file">
+          <span v-if="isSubmitting">Procesando…</span>
+          <span v-else>Subir CSV</span>
+        </button>
+      </form>
+
+      <div v-if="message" class="message" :class="messageType">
+        {{ message }}
+      </div>
+
+      <dl v-if="result" class="result">
+        <div>
+          <dt>Importación</dt>
+          <dd>#{{ result.statement_id }} · {{ result.file_name }}</dd>
+        </div>
+        <div>
+          <dt>Movimientos creados</dt>
+          <dd>{{ result.transactions_created }}</dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  {{ block.super }}
+  <script src="{% static 'invoice_classifier/statement_upload.js' %}" defer></script>
+{% endblock %}
