@@ -8,7 +8,8 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
 from django.core.files.base import ContentFile
-from django.db import transaction
+from django.db import connection, transaction
+from django.db.utils import DatabaseError
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -138,3 +139,41 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
         },
         status=201,
     )
+
+
+@require_http_methods(["GET", "POST"])
+@ensure_csrf_cookie
+def debug_sql_console(request: HttpRequest) -> HttpResponse:
+    """Render a simple SQL console for ad-hoc debugging queries."""
+
+    query = ""
+    error_message: str | None = None
+    columns: list[str] | None = None
+    rows: list[tuple[object, ...]] | None = None
+    rowcount: int | None = None
+
+    if request.method == "POST":
+        query = request.POST.get("query", "").strip()
+
+        if query:
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute(query)
+                    rowcount = cursor.rowcount
+                    if cursor.description:
+                        columns = [column[0] for column in cursor.description]
+                        rows = cursor.fetchall()
+            except DatabaseError as exc:
+                error_message = str(exc)
+        else:
+            error_message = "Introduce una consulta SQL para ejecutar."
+
+    context = {
+        "query": query,
+        "error_message": error_message,
+        "columns": columns,
+        "rows": rows,
+        "rowcount": rowcount,
+    }
+
+    return render(request, "invoice_classifier/debug_sql.html", context)
