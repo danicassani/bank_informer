@@ -70,7 +70,10 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
     except UnicodeDecodeError:
         decoded_content = file_bytes.decode("latin-1")
 
-    reader = csv.DictReader(io.StringIO(decoded_content), delimiter=";")
+    reader = csv.DictReader(
+        io.StringIO("\n".join(decoded_content.splitlines()[2:])), 
+        delimiter=";"
+    ) #First 2 lines are rubbish
     required_columns = {"Concepto", "Fecha", "Importe", "Saldo disponible"}
     header = set(reader.fieldnames or [])
     missing_columns = required_columns - header
@@ -91,7 +94,6 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
                 source_name=source_name,
                 file_name=uploaded_file.name,
             )
-            statement.original_file.save(uploaded_file.name, ContentFile(file_bytes))
 
             transactions: list[BankTransaction] = []
             for raw_row in reader:
