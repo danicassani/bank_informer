@@ -136,3 +136,4 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
         },
         status=201,
     )
+
