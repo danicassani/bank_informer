@@ -64,7 +64,6 @@ class ClassificationCriterionAdmin(admin.ModelAdmin):
 
     list_display = ("name", "slug")
     search_fields = ("name", "slug")
-    prepopulated_fields = {"slug": ("name",)}
     inlines = (ClassificationLabelInline,)
 
 

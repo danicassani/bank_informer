@@ -12,7 +12,7 @@ class ClassificationCriterionForm(forms.ModelForm):
 
     concept_keywords = forms.CharField(
         label="Conceptos o palabras clave",
-        required=False,
+        required=True,
         widget=forms.Textarea(
             attrs={
                 "rows": 4,
@@ -26,7 +26,6 @@ class ClassificationCriterionForm(forms.ModelForm):
         model = ClassificationCriterion
         fields = [
             "name",
-            "slug",
             "description",
             "concept_keywords",
             "min_amount",
@@ -44,6 +43,8 @@ class ClassificationCriterionForm(forms.ModelForm):
     def clean_concept_keywords(self) -> list[str]:
         data = self.cleaned_data.get("concept_keywords", "")
         keywords = [line.strip() for line in data.splitlines() if line.strip()]
+        if not keywords:
+            raise forms.ValidationError("Añade al menos una palabra clave.")
         return keywords
 
     def save(self, commit: bool = True) -> ClassificationCriterion:

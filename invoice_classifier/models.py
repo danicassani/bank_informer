@@ -1,5 +1,7 @@
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
+from django.utils.text import slugify
 
 class StatementImport(models.Model):
     """Metadata about a bank statement file that has been imported."""
@@ -83,7 +85,7 @@ class ClassificationCriterion(models.Model):
     """Dimension sobre la que se puede clasificar un movimiento (tipo, categoría, etc.)."""
 
     name = models.CharField(max_length=100, unique=True)
-    slug = models.SlugField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True, editable=False)
     description = models.TextField(blank=True)
     concept_keywords = models.JSONField(
         default=list,
@@ -112,6 +114,18 @@ class ClassificationCriterion(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    def clean(self) -> None:
+        super().clean()
+
+        if not self.normalized_keywords():
+            raise ValidationError(
+                {"concept_keywords": "Añade al menos una palabra clave para el criterio."}
+            )
+
+        generated_slug = slugify(self.name or "")
+        if not generated_slug:
+            raise ValidationError({"name": "El nombre debe poder convertirse en un slug válido."})
 
     def normalized_keywords(self) -> list[str]:
         """Return the list of keywords in lowercase without empty values."""
@@ -144,6 +158,10 @@ class ClassificationCriterion(models.Model):
             return False
 
         return True
+
+    def save(self, *args, **kwargs) -> None:
+        self.slug = slugify(self.name or "")
+        super().save(*args, **kwargs)
 
     def get_or_create_default_label(self) -> "ClassificationLabel":
         """Return a label to use for automatic classifications."""
@@ -190,11 +208,11 @@ class ClassificationCriterion(models.Model):
         )
 
         to_create: list["TransactionClassification"] = []
-        for transaction in unclassified:
-            if self.matches_transaction(transaction):
+        for bank_transaction in unclassified:
+            if self.matches_transaction(bank_transaction):
                 to_create.append(
                     TransactionClassification(
-                        transaction=transaction,
+                        transaction=bank_transaction,
                         label=label,
                         source=TransactionClassification.Sources.AUTOMATIC,
                         confidence=1,
