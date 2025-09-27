@@ -58,37 +58,39 @@
         </div>
       </div>
 
-      <fieldset class="controls__group controls__group--criteria">
-        <legend>Selecciona criterios</legend>
-        <div class="criteria-grid">
-          {% for criterion in criteria_list %}
-            <label class="criteria-item">
-              <input
-                type="checkbox"
-                name="criteria"
-                value="{{ criterion.slug }}"
-                {% if criterion.slug in selected_criteria_slugs %}checked{% endif %}
-              />
-              <span>{{ criterion.name }}</span>
-            </label>
-          {% empty %}
-            <p>No hay criterios definidos todavía.</p>
-          {% endfor %}
-        </div>
-      </fieldset>
+      <div class="visualizer__board">
+        <fieldset class="controls__group controls__group--criteria">
+          <legend>Selecciona criterios</legend>
+          <div class="criteria-list">
+            {% for criterion in criteria_list %}
+              <label class="criteria-list__item">
+                <input
+                  type="checkbox"
+                  name="criteria"
+                  value="{{ criterion.slug }}"
+                  {% if criterion.slug in selected_criteria_slugs %}checked{% endif %}
+                />
+                <span>{{ criterion.name }}</span>
+              </label>
+            {% empty %}
+              <p>No hay criterios definidos todavía.</p>
+            {% endfor %}
+          </div>
+        </fieldset>
+
+        <section class="chart-card visualizer__chart">
+          {% if chart_entries %}
+            <div class="chart-card__inner" data-chart='{{ chart_payload|escapejs }}'>
+              <canvas id="spending-chart" height="120"></canvas>
+            </div>
+          {% else %}
+            <p class="chart-card__empty">No hay movimientos que coincidan con los filtros seleccionados.</p>
+          {% endif %}
+        </section>
+      </div>
 
       <button type="submit" class="controls__submit">Actualizar visualización</button>
     </form>
-
-    <section class="chart-card">
-      {% if chart_entries %}
-        <div class="chart-card__inner" data-chart='{{ chart_payload|escapejs }}'>
-          <canvas id="spending-chart" height="120"></canvas>
-        </div>
-      {% else %}
-        <p class="chart-card__empty">No hay movimientos que coincidan con los filtros seleccionados.</p>
-      {% endif %}
-    </section>
   </section>
 {% endblock %}
 
