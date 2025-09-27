@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gestión de criterios de clasificación</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.5;
+      }
+
+      body {
+        margin: 0;
+        background: #f4f4f5;
+        padding: 2rem;
+      }
+
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        margin-top: 0;
+        font-size: 2rem;
+      }
+
+      .messages {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0;
+      }
+
+      .messages li {
+        background: #ecfdf5;
+        border: 1px solid #34d399;
+        color: #065f46;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .panels {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      }
+
+      .panel {
+        background: #ffffff;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      }
+
+      form {
+        display: grid;
+        gap: 1rem;
+      }
+
+      label {
+        font-weight: 600;
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      input[type="text"],
+      textarea,
+      input[type="number"] {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid #d4d4d8;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+      }
+
+      textarea {
+        resize: vertical;
+      }
+
+      .helptext {
+        font-size: 0.8rem;
+        color: #52525b;
+      }
+
+      .errorlist {
+        margin: 0.25rem 0 0;
+        padding-left: 1.1rem;
+        color: #b91c1c;
+        font-size: 0.85rem;
+      }
+
+      button {
+        justify-self: start;
+        background: #2563eb;
+        color: #ffffff;
+        border: none;
+        border-radius: 0.5rem;
+        padding: 0.6rem 1.25rem;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      button:hover {
+        background: #1d4ed8;
+      }
+
+      .criteria-list {
+        margin-top: 1.5rem;
+      }
+
+      .criteria-list ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .criteria-item {
+        border: 1px solid #e4e4e7;
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        background: #fafafa;
+      }
+
+      .criteria-item strong {
+        display: block;
+        font-size: 1rem;
+        margin-bottom: 0.2rem;
+      }
+
+      .criteria-item a {
+        color: #2563eb;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .transactions {
+        margin-top: 2rem;
+      }
+
+      .transaction-list {
+        background: #ffffff;
+        border-radius: 1rem;
+        padding: 1rem;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        max-height: 420px;
+        overflow-y: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid #e4e4e7;
+        font-size: 0.9rem;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        background: #ffffff;
+        z-index: 1;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      @media (max-width: 720px) {
+        body {
+          padding: 1rem;
+        }
+
+        .transaction-list {
+          max-height: 320px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Gestión de criterios de clasificación</h1>
+      <p>
+        Crea reglas basadas en conceptos y rangos de importes. Cada vez que guardes un
+        criterio se revisarán los movimientos sin clasificar para aplicar la etiqueta
+        correspondiente de forma automática.
+      </p>
+
+      {% if messages %}
+        <ul class="messages">
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <div class="panels">
+        <section class="panel">
+          <h2>Nuevo criterio</h2>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="mode" value="create" />
+            {{ create_form.non_field_errors }}
+
+            {% for field in create_form %}
+              <div>
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                  <p class="helptext">{{ field.help_text }}</p>
+                {% endif %}
+                {{ field.errors }}
+              </div>
+            {% endfor %}
+
+            <button type="submit">Guardar criterio</button>
+          </form>
+        </section>
+
+        <section class="panel">
+          <h2>Editar criterio</h2>
+          {% if edit_form and edit_instance %}
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="mode" value="update" />
+              <input type="hidden" name="criterion_id" value="{{ edit_instance.pk }}" />
+              {{ edit_form.non_field_errors }}
+
+              {% for field in edit_form %}
+                <div>
+                  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.help_text %}
+                    <p class="helptext">{{ field.help_text }}</p>
+                  {% endif %}
+                  {{ field.errors }}
+                </div>
+              {% endfor %}
+
+              <button type="submit">Actualizar criterio</button>
+            </form>
+          {% else %}
+            <p>Selecciona un criterio de la lista inferior para editarlo.</p>
+          {% endif %}
+
+          <div class="criteria-list">
+            <h3>Listado de criterios</h3>
+            <ul>
+              {% for criterion in criteria_list %}
+                <li class="criteria-item">
+                  <strong>{{ criterion.name }}</strong>
+                  <div>
+                    <small>Slug: {{ criterion.slug }}</small>
+                  </div>
+                  {% if criterion.description %}
+                    <p>{{ criterion.description }}</p>
+                  {% endif %}
+                  {% if criterion.concept_keywords %}
+                    <p>
+                      <strong>Palabras clave:</strong>
+                      {{ criterion.concept_keywords|join:", " }}
+                    </p>
+                  {% endif %}
+                  <p>
+                    {% if criterion.min_amount %}
+                      Mín: {{ criterion.min_amount }}
+                    {% endif %}
+                    {% if criterion.max_amount %}
+                      Máx: {{ criterion.max_amount }}
+                    {% endif %}
+                  </p>
+                  <a href="?edit={{ criterion.pk }}">Editar</a>
+                </li>
+              {% empty %}
+                <li>No hay criterios definidos todavía.</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </section>
+      </div>
+
+      <section class="transactions">
+        <h2>Movimientos sin clasificar ({{ unclassified_count }})</h2>
+        <div class="transaction-list">
+          {% if unclassified_count %}
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Concepto</th>
+                  <th>Importe</th>
+                  <th>Importación</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for transaction in unclassified_transactions %}
+                  <tr>
+                    <td>{{ transaction.booking_date|date:"d/m/Y" }}</td>
+                    <td>{{ transaction.concept }}</td>
+                    <td>{{ transaction.amount }}</td>
+                    <td>{{ transaction.statement.source_name }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p>No hay movimientos pendientes de clasificar.</p>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
