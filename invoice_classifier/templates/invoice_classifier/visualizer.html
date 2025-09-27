@@ -89,6 +89,36 @@
           {% endif %}
         </section>
       </div>
+
+      <section class="visualizer__details" data-details hidden aria-hidden="true">
+        <h2 class="visualizer__details-title">
+          Movimientos de <span data-details-name></span>
+        </h2>
+        <div class="visualizer__details-table-wrapper">
+          <table class="visualizer__details-table">
+            <thead>
+              <tr>
+                <th scope="col" aria-sort="none">
+                  <button type="button" class="visualizer__sort-button" data-sort-key="name">
+                    Nombre
+                  </button>
+                </th>
+                <th scope="col" aria-sort="none">
+                  <button type="button" class="visualizer__sort-button" data-sort-key="date">
+                    Fecha
+                  </button>
+                </th>
+                <th scope="col" aria-sort="none" class="visualizer__details-amount">
+                  <button type="button" class="visualizer__sort-button" data-sort-key="amount">
+                    Importe
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody data-details-body></tbody>
+          </table>
+        </div>
+      </section>
     </form>
   </section>
 {% endblock %}

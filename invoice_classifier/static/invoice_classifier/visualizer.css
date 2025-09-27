@@ -192,6 +192,81 @@
   color: #475569;
 }
 
+.visualizer__details {
+  background: white;
+  border-radius: 18px;
+  padding: 1.5rem;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.visualizer__details[hidden] {
+  display: none;
+}
+
+.visualizer__details-title {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+.visualizer__details-title span {
+  color: #1d4ed8;
+}
+
+.visualizer__details-table-wrapper {
+  overflow-x: auto;
+}
+
+.visualizer__details-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 420px;
+}
+
+.visualizer__details-table th,
+.visualizer__details-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+
+.visualizer__details-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.visualizer__details-amount {
+  text-align: right;
+}
+
+.visualizer__sort-button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.visualizer__sort-button::after {
+  content: attr(data-sort-indicator);
+  font-size: 0.75em;
+  color: #64748b;
+}
+
+.visualizer__sort-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 @media (max-width: 640px) {
   .controls__group--period {
     flex-direction: column;

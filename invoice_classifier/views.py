@@ -107,7 +107,7 @@ def index(request: HttpRequest) -> HttpResponse:
         transaction__amount__lt=0,
     )
 
-    aggregated_spending = (
+    aggregated_spending = list(
         classifications.values(
             "label__criterion__name", "label__criterion__slug", "label__criterion_id"
         )
@@ -115,16 +115,51 @@ def index(request: HttpRequest) -> HttpResponse:
         .order_by("label__criterion__name")
     )
 
-    chart_entries: list[dict[str, object]] = []
+    chart_entries_map: dict[str, dict[str, object]] = {}
     for entry in aggregated_spending:
         total_spent = entry.get("total_spent") or Decimal("0")
-        chart_entries.append(
+        slug = entry["label__criterion__slug"]
+        chart_entries_map[slug] = {
+            "slug": slug,
+            "name": entry["label__criterion__name"],
+            "total": float(-total_spent),
+            "transactions": [],
+        }
+
+    classified_transactions = classifications.select_related(
+        "transaction", "label__criterion"
+    ).order_by("transaction__booking_date", "transaction__id")
+
+    for classification in classified_transactions:
+        label = classification.label
+        if label is None:
+            continue
+
+        criterion = label.criterion
+        if criterion is None:
+            continue
+
+        entry = chart_entries_map.get(criterion.slug)
+        if entry is None:
+            continue
+
+        transaction = classification.transaction
+        if transaction is None:
+            continue
+
+        amount_value = transaction.amount if transaction.amount is not None else Decimal("0")
+
+        entry["transactions"].append(
             {
-                "slug": entry["label__criterion__slug"],
-                "name": entry["label__criterion__name"],
-                "total": float(-total_spent),
+                "name": transaction.concept,
+                "date": transaction.booking_date.isoformat()
+                if transaction.booking_date
+                else "",
+                "amount": float(-amount_value),
             }
         )
+
+    chart_entries = list(chart_entries_map.values())
 
     available_years_qs = BankTransaction.objects.filter(booking_date__isnull=False).dates(
         "booking_date", "year", order="ASC"
