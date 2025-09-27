@@ -30,10 +30,10 @@ from .models import (
 
 
 @ensure_csrf_cookie
-def index(request: HttpRequest) -> HttpResponse:
-    """Render the Vue-powered index page."""
+def upload_csv(request: HttpRequest) -> HttpResponse:
+    """Render the CSV upload interface."""
 
-    return render(request, "invoice_classifier/index.html")
+    return render(request, "invoice_classifier/upload_csv.html")
 
 
 MONTH_NAMES_ES = [
@@ -54,7 +54,7 @@ MONTH_NAMES_ES = [
 
 
 @ensure_csrf_cookie
-def visualizer(request: HttpRequest) -> HttpResponse:
+def index(request: HttpRequest) -> HttpResponse:
     """Display aggregated spending per criterion using interactive controls."""
 
     today = timezone.localdate()
@@ -152,6 +152,13 @@ def visualizer(request: HttpRequest) -> HttpResponse:
         "invoice_classifier/visualizer.html",
         context,
     )
+
+
+@ensure_csrf_cookie
+def visualizer(request: HttpRequest) -> HttpResponse:
+    """Backward-compatible alias for the CSV upload page."""
+
+    return upload_csv(request)
 
 
 def _parse_decimal(value: str) -> Decimal:

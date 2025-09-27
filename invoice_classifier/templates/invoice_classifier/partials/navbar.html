@@ -4,7 +4,7 @@
     <ul class="top-nav__links">
       <li>
         <a href="{% url 'index' %}" class="{% if active_page == 'index' %}is-active{% endif %}">
-          Inicio
+          Visualizador
         </a>
       </li>
       <li>
@@ -13,8 +13,8 @@
         </a>
       </li>
       <li>
-        <a href="{% url 'visualizer' %}" class="{% if active_page == 'visualizer' %}is-active{% endif %}">
-          Visualizador
+        <a href="{% url 'upload_csv' %}" class="{% if active_page == 'upload' %}is-active{% endif %}">
+          Upload CSV
         </a>
       </li>
       <li>
