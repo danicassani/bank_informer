@@ -25,9 +25,9 @@
     }
 
     .criteria-page .messages li {
-      background: #ecfdf5;
-      border: 1px solid #34d399;
-      color: #065f46;
+      background: var(--color-success-bg);
+      border: 1px solid var(--color-success-border);
+      color: var(--color-success-text);
       padding: 0.75rem 1rem;
       border-radius: 0.75rem;
       margin-bottom: 0.5rem;
@@ -40,10 +40,10 @@
     }
 
     .criteria-page .panel {
-      background: #ffffff;
+      background: var(--color-surface-elevated);
       border-radius: 1rem;
       padding: 1.5rem;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 10px 30px var(--shadow-soft);
     }
 
     .criteria-page form {
@@ -63,7 +63,8 @@
       width: 100%;
       padding: 0.6rem 0.75rem;
       border-radius: 0.5rem;
-      border: 1px solid #d4d4d8;
+      border: 1px solid var(--color-input-border);
+      background: var(--color-input-bg);
       font-size: 0.95rem;
       box-sizing: border-box;
     }
@@ -74,20 +75,20 @@
 
     .criteria-page .helptext {
       font-size: 0.8rem;
-      color: #52525b;
+      color: var(--color-muted);
     }
 
     .criteria-page .errorlist {
       margin: 0.25rem 0 0;
       padding-left: 1.1rem;
-      color: #b91c1c;
+      color: var(--color-error-text);
       font-size: 0.85rem;
     }
 
     .criteria-page button {
       justify-self: start;
-      background: #2563eb;
-      color: #ffffff;
+      background: var(--color-accent);
+      color: var(--color-accent-contrast);
       border: none;
       border-radius: 0.5rem;
       padding: 0.6rem 1.25rem;
@@ -97,7 +98,7 @@
     }
 
     .criteria-page button:hover {
-      background: #1d4ed8;
+      background: var(--color-accent-strong);
     }
 
     .criteria-page .criteria-list {
@@ -113,10 +114,10 @@
     }
 
     .criteria-page .criteria-item {
-      border: 1px solid #e4e4e7;
+      border: 1px solid var(--color-border);
       border-radius: 0.75rem;
       padding: 0.75rem 1rem;
-      background: #fafafa;
+      background: var(--color-surface-subtle);
     }
 
     .criteria-page .criteria-item strong {
@@ -126,7 +127,7 @@
     }
 
     .criteria-page .criteria-item a {
-      color: #2563eb;
+      color: var(--color-accent);
       text-decoration: none;
       font-weight: 600;
     }
@@ -136,10 +137,10 @@
     }
 
     .criteria-page .transaction-list {
-      background: #ffffff;
+      background: var(--color-surface-elevated);
       border-radius: 1rem;
       padding: 1rem;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      box-shadow: 0 10px 30px var(--shadow-soft);
       max-height: 420px;
       overflow-y: auto;
     }
@@ -153,14 +154,14 @@
     .criteria-page td {
       text-align: left;
       padding: 0.5rem 0.75rem;
-      border-bottom: 1px solid #e4e4e7;
+      border-bottom: 1px solid var(--color-table-border);
       font-size: 0.9rem;
     }
 
     .criteria-page th {
       position: sticky;
       top: 0;
-      background: #ffffff;
+      background: var(--color-surface-elevated);
       z-index: 1;
     }
 
