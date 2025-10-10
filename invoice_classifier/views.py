@@ -9,10 +9,11 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
-from django.core.files.base import ContentFile
-from django.db import connection, transaction
+from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
+from django.db import transaction
 from django.db.models import Sum
-from django.db.utils import DatabaseError
 from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -20,7 +21,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
-from .forms import ClassificationCriterionForm
+from .forms import ClassificationCriterionForm, SignUpForm
 from .models import (
     BankTransaction,
     ClassificationCriterion,
@@ -29,6 +30,7 @@ from .models import (
 )
 
 
+@login_required
 @ensure_csrf_cookie
 def upload_csv(request: HttpRequest) -> HttpResponse:
     """Render the CSV upload interface."""
@@ -53,6 +55,7 @@ MONTH_NAMES_ES = [
 ]
 
 
+@login_required
 @ensure_csrf_cookie
 def index(request: HttpRequest) -> HttpResponse:
     """Display aggregated spending per criterion using interactive controls."""
@@ -359,6 +362,7 @@ def index(request: HttpRequest) -> HttpResponse:
     )
 
 
+@login_required
 @ensure_csrf_cookie
 def visualizer(request: HttpRequest) -> HttpResponse:
     """Backward-compatible alias for the CSV upload page."""
@@ -393,6 +397,7 @@ def _clean_row(row: dict[str, str]) -> dict[str, str]:
     return {key: (value or "").strip() for key, value in row.items()}
 
 
+@login_required
 @require_http_methods(["POST"])
 def upload_statement(request: HttpRequest) -> JsonResponse:
     """Handle CSV uploads and persist them as statements and transactions."""
@@ -482,44 +487,7 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
     )
 
 
-@require_http_methods(["GET", "POST"])
-@ensure_csrf_cookie
-def debug_sql_console(request: HttpRequest) -> HttpResponse:
-    """Render a simple SQL console for ad-hoc debugging queries."""
-
-    query = ""
-    error_message: str | None = None
-    columns: list[str] | None = None
-    rows: list[tuple[object, ...]] | None = None
-    rowcount: int | None = None
-
-    if request.method == "POST":
-        query = request.POST.get("query", "").strip()
-
-        if query:
-            try:
-                with connection.cursor() as cursor:
-                    cursor.execute(query)
-                    rowcount = cursor.rowcount
-                    if cursor.description:
-                        columns = [column[0] for column in cursor.description]
-                        rows = cursor.fetchall()
-            except DatabaseError as exc:
-                error_message = str(exc)
-        else:
-            error_message = "Introduce una consulta SQL para ejecutar."
-
-    context = {
-        "query": query,
-        "error_message": error_message,
-        "columns": columns,
-        "rows": rows,
-        "rowcount": rowcount,
-    }
-
-    return render(request, "invoice_classifier/debug_sql.html", context)
-
-
+@login_required
 @require_http_methods(["GET", "POST"])
 @ensure_csrf_cookie
 def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
@@ -588,3 +556,62 @@ def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
     }
 
     return render(request, "invoice_classifier/manage_criteria.html", context)
+
+
+@require_http_methods(["GET", "POST"])
+@ensure_csrf_cookie
+def login_view(request: HttpRequest) -> HttpResponse:
+    """Authenticate an existing user."""
+
+    if request.user.is_authenticated:
+        return redirect("index")
+
+    redirect_target = request.POST.get("next") or request.GET.get("next")
+    form = AuthenticationForm(request, data=request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        login(request, form.get_user())
+        redirect_to = redirect_target or reverse("index")
+        return redirect(redirect_to)
+
+    return render(
+        request,
+        "invoice_classifier/auth/login.html",
+        {
+            "form": form,
+            "next": redirect_target,
+        },
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@ensure_csrf_cookie
+def sign_up(request: HttpRequest) -> HttpResponse:
+    """Register a new user and log them in immediately."""
+
+    if request.user.is_authenticated:
+        return redirect("index")
+
+    form = SignUpForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        login(request, user)
+        messages.success(request, "Cuenta creada correctamente. ¡Bienvenido!")
+        return redirect("index")
+
+    return render(
+        request,
+        "invoice_classifier/auth/sign_up.html",
+        {
+            "form": form,
+        },
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def logout_view(request: HttpRequest) -> HttpResponse:
+    """Log the current user out and return to the login screen."""
+
+    logout(request)
+    messages.info(request, "Has cerrado sesión.")
+    return redirect("login")

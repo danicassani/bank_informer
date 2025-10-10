@@ -7,11 +7,13 @@ urlpatterns = [
     path("visualizador/", views.visualizer, name="visualizer_legacy"),
     path("upload-csv/", views.upload_csv, name="upload_csv"),
     path("api/imports/", views.upload_statement, name="upload_statement"),
-    path("debug/sql/", views.debug_sql_console, name="debug_sql_console"),
     path(
         "criterios/",
         views.manage_classification_criteria,
         name="manage_classification_criteria",
     ),
+    path("login/", views.login_view, name="login"),
+    path("sign-up/", views.sign_up, name="sign_up"),
+    path("logout/", views.logout_view, name="logout"),
 ]
 

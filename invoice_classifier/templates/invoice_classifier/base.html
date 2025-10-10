@@ -129,6 +129,33 @@
         padding: 2rem 0 3rem;
       }
 
+      .global-messages {
+        display: grid;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .global-messages__item {
+        border-radius: 1rem;
+        padding: 0.85rem 1.1rem;
+        font-weight: 500;
+        box-shadow: 0 10px 30px var(--shadow-soft);
+      }
+
+      .global-messages__item--info,
+      .global-messages__item--success {
+        background: var(--color-success-bg);
+        border: 1px solid var(--color-success-border);
+        color: var(--color-success-text);
+      }
+
+      .global-messages__item--error,
+      .global-messages__item--warning {
+        background: var(--color-error-bg);
+        border: 1px solid var(--color-error-border);
+        color: var(--color-error-text);
+      }
+
       @media (max-width: 720px) {
         .content {
           width: min(100%, calc(100% - 2rem));
@@ -142,6 +169,15 @@
     <div class="layout">
       {% block navbar %}{% include "invoice_classifier/partials/navbar.html" %}{% endblock %}
       <main class="content {% block content_class %}{% endblock %}">
+        {% if messages %}
+          <div class="global-messages" role="status">
+            {% for message in messages %}
+              <div class="global-messages__item global-messages__item--{{ message.tags|default:'info' }}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
         {% block content %}{% endblock %}
       </main>
     </div>

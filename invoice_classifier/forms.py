@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 
 from .models import ClassificationCriterion
 
@@ -53,3 +55,30 @@ class ClassificationCriterionForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+
+class SignUpForm(UserCreationForm):
+    """Registration form with localized labels for new users."""
+
+    email = forms.EmailField(
+        label="Correo electrónico",
+        required=False,
+        help_text="Opcional, usado para recuperar la cuenta.",
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ("username", "email")
+        labels = {
+            "username": "Nombre de usuario",
+        }
+        help_texts = {
+            "username": "Requerido. 150 caracteres o menos. Letras, dígitos y @/./+/-/_.",
+        }
+
+    def save(self, commit: bool = True) -> User:
+        user: User = super().save(commit=False)
+        user.email = self.cleaned_data.get("email", "")
+        if commit:
+            user.save()
+        return user
