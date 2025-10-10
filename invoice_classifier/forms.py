@@ -73,7 +73,11 @@ class SignUpForm(UserCreationForm):
             "username": "Nombre de usuario",
         }
         help_texts = {
-            "username": "Requerido. 150 caracteres o menos. Letras, dígitos y @/./+/-/_.",
+            "username": (
+                "Requerido. 150 caracteres o menos. No se permiten espacios ni "
+                "símbolos como !, #, $, %, &, *, :, ;, =, ?, ^, `, {, }, |, ~. "
+                "Puedes usar letras, números y los signos @, ., +, -, _."
+            ),
         }
 
     def save(self, commit: bool = True) -> User:
