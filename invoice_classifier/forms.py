@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from django import forms
 from django.contrib.auth import password_validation
 from django.contrib.auth.forms import UserCreationForm, UsernameField
@@ -38,8 +40,11 @@ class ClassificationCriterionForm(forms.ModelForm):
             "description": forms.Textarea(attrs={"rows": 3}),
         }
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, user: User | None = None, **kwargs: Any) -> None:
+        self.request_user = user
         super().__init__(*args, **kwargs)
+        if self.request_user is not None and self.instance.pk and self.instance.user_id is None:
+            self.instance.user = self.request_user
         if not self.is_bound and self.instance.pk:
             self.initial["concept_keywords"] = "\n".join(self.instance.concept_keywords or [])
 
@@ -52,6 +57,10 @@ class ClassificationCriterionForm(forms.ModelForm):
 
     def save(self, commit: bool = True) -> ClassificationCriterion:
         instance: ClassificationCriterion = super().save(commit=False)
+        if instance.pk is None and self.request_user is not None:
+            instance.user = self.request_user
+        elif self.request_user is not None and instance.user_id is None:
+            instance.user = self.request_user
         instance.concept_keywords = self.cleaned_data.get("concept_keywords", [])
         if commit:
             instance.save()

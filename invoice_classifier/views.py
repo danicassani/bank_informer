@@ -61,15 +61,19 @@ def index(request: HttpRequest) -> HttpResponse:
     """Display aggregated spending per criterion using interactive controls."""
 
     today = timezone.localdate()
-    criteria_qs = ClassificationCriterion.objects.all().order_by("name")
+    criteria_qs = (
+        ClassificationCriterion.objects.filter(user=request.user).order_by("name")
+    )
     available_criteria_slugs = list(criteria_qs.values_list("slug", flat=True))
     active_tab = request.GET.get("tab", "all")
     if active_tab not in {"all", "single"}:
         active_tab = "all"
 
-    available_years_qs = BankTransaction.objects.filter(
-        booking_date__isnull=False
-    ).dates("booking_date", "year", order="ASC")
+    available_years_qs = (
+        BankTransaction.objects.filter(
+            user=request.user, booking_date__isnull=False
+        ).dates("booking_date", "year", order="ASC")
+    )
     available_years = [dt.year for dt in available_years_qs]
     if not available_years:
         available_years = [today.year]
@@ -121,6 +125,7 @@ def index(request: HttpRequest) -> HttpResponse:
 
         classifications = TransactionClassification.objects.filter(
             label__criterion__in=selected_criteria,
+            label__criterion__user=request.user,
             transaction__booking_date__gte=period_start,
             transaction__booking_date__lt=period_end,
             transaction__amount__lt=0,
@@ -213,6 +218,7 @@ def index(request: HttpRequest) -> HttpResponse:
         if selected_criterion is not None:
             base_classifications = TransactionClassification.objects.filter(
                 label__criterion=selected_criterion,
+                label__criterion__user=request.user,
                 transaction__amount__lt=0,
                 transaction__booking_date__isnull=False,
             )
@@ -438,6 +444,7 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
     try:
         with transaction.atomic():
             statement = StatementImport.objects.create(
+                user=request.user,
                 source_name=source_name,
                 file_name=uploaded_file.name,
             )
@@ -464,6 +471,7 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
 
                 transactions.append(
                     BankTransaction(
+                        user=request.user,
                         statement=statement,
                         concept=concept,
                         booking_date=booking_date,
@@ -493,15 +501,20 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
 def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
     """Allow users to create and update classification criteria."""
 
-    criteria_list = ClassificationCriterion.objects.all().order_by("name")
+    criteria_list = ClassificationCriterion.objects.filter(user=request.user).order_by(
+        "name"
+    )
     unclassified_transactions_qs = (
-        BankTransaction.objects.filter(classifications__isnull=True)
+        BankTransaction.objects.filter(
+            user=request.user,
+            classifications__isnull=True,
+        )
         .select_related("statement")
         .order_by("-booking_date", "-id")
     )
     unclassified_count = unclassified_transactions_qs.count()
 
-    create_form = ClassificationCriterionForm(prefix="create")
+    create_form = ClassificationCriterionForm(prefix="create", user=request.user)
     edit_form: ClassificationCriterionForm | None = None
     edit_instance: ClassificationCriterion | None = None
 
@@ -509,14 +522,23 @@ def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
         mode = request.POST.get("mode", "create")
         if mode == "update":
             edit_instance = get_object_or_404(
-                ClassificationCriterion, pk=request.POST.get("criterion_id")
+                ClassificationCriterion,
+                pk=request.POST.get("criterion_id"),
+                user=request.user,
             )
             edit_form = ClassificationCriterionForm(
-                request.POST, instance=edit_instance, prefix="edit"
+                request.POST,
+                instance=edit_instance,
+                prefix="edit",
+                user=request.user,
             )
             form = edit_form
         else:
-            form = ClassificationCriterionForm(request.POST, prefix="create")
+            form = ClassificationCriterionForm(
+                request.POST,
+                prefix="create",
+                user=request.user,
+            )
             create_form = form
 
         if form.is_valid():
@@ -543,8 +565,16 @@ def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
     else:
         edit_id = request.GET.get("edit")
         if edit_id:
-            edit_instance = get_object_or_404(ClassificationCriterion, pk=edit_id)
-            edit_form = ClassificationCriterionForm(instance=edit_instance, prefix="edit")
+            edit_instance = get_object_or_404(
+                ClassificationCriterion,
+                pk=edit_id,
+                user=request.user,
+            )
+            edit_form = ClassificationCriterionForm(
+                instance=edit_instance,
+                prefix="edit",
+                user=request.user,
+            )
 
     context = {
         "criteria_list": criteria_list,
