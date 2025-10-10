@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import password_validation
+from django.contrib.auth.forms import UserCreationForm, UsernameField
 from django.contrib.auth.models import User
 
 from .models import ClassificationCriterion
@@ -60,6 +61,13 @@ class ClassificationCriterionForm(forms.ModelForm):
 class SignUpForm(UserCreationForm):
     """Registration form with localized labels for new users."""
 
+    username = UsernameField(
+        label="Nombre de usuario",
+        max_length=64,
+        help_text="Usa letras (a-z), números (0-9) y los símbolos @ . + - _. Máximo 64 caracteres.",
+        widget=forms.TextInput(attrs={"autofocus": True, "autocomplete": "username"}),
+    )
+
     email = forms.EmailField(
         label="Correo electrónico",
         required=False,
@@ -69,16 +77,12 @@ class SignUpForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
         fields = ("username", "email")
-        labels = {
-            "username": "Nombre de usuario",
-        }
-        help_texts = {
-            "username": (
-                "Requerido. 150 caracteres o menos. No se permiten espacios ni "
-                "símbolos como !, #, $, %, &, *, :, ;, =, ?, ^, `, {, }, |, ~. "
-                "Puedes usar letras, números y los signos @, ., +, -, _."
-            ),
-        }
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        password_help = password_validation.password_validators_help_texts()
+        if password_help:
+            self.fields["password1"].help_text = "\n".join(password_help)
 
     def save(self, commit: bool = True) -> User:
         user: User = super().save(commit=False)
