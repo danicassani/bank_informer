@@ -1,40 +1,51 @@
 <nav class="top-nav">
   <div class="top-nav__inner">
     <a class="top-nav__brand" href="{% url 'index' %}">Bank Informer</a>
-    <ul class="top-nav__links">
-      <li>
-        <a href="{% url 'index' %}" class="{% if active_page == 'index' %}is-active{% endif %}">
-          Visualizador
-        </a>
-      </li>
-      <li>
-        <a href="{% url 'manage_classification_criteria' %}" class="{% if active_page == 'criteria' %}is-active{% endif %}">
-          Criterios
-        </a>
-      </li>
-      <li>
-        <a href="{% url 'upload_csv' %}" class="{% if active_page == 'upload' %}is-active{% endif %}">
-          Upload CSV
-        </a>
-      </li>
-      <li>
-        <a href="{% url 'debug_sql_console' %}" class="{% if active_page == 'sql' %}is-active{% endif %}">
-          SQL
-        </a>
-      </li>
-      <li>
-        <a href="{% url 'admin:index' %}" class="{% if active_page == 'admin' %}is-active{% endif %}">
-          Admin
-        </a>
-      </li>
-    </ul>
+    <div class="top-nav__actions">
+      <ul class="top-nav__links">
+        <li>
+          <a href="{% url 'index' %}" class="{% if active_page == 'index' %}is-active{% endif %}">
+            Visualizador
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'manage_classification_criteria' %}" class="{% if active_page == 'criteria' %}is-active{% endif %}">
+            Criterios
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'upload_csv' %}" class="{% if active_page == 'upload' %}is-active{% endif %}">
+            Upload CSV
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'debug_sql_console' %}" class="{% if active_page == 'sql' %}is-active{% endif %}">
+            SQL
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'admin:index' %}" class="{% if active_page == 'admin' %}is-active{% endif %}">
+            Admin
+          </a>
+        </li>
+      </ul>
+      <button
+        type="button"
+        class="theme-toggle js-theme-toggle"
+        aria-pressed="false"
+        aria-label="Cambiar tema"
+      >
+        <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
+        <span class="theme-toggle__text">Modo oscuro</span>
+      </button>
+    </div>
   </div>
 </nav>
 <style>
   .top-nav {
-    background: #1f2937;
-    color: #f8fafc;
-    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.16);
+    background: var(--nav-bg);
+    color: var(--nav-text);
+    box-shadow: 0 2px 12px var(--shadow-soft);
   }
 
   .top-nav__inner {
@@ -52,6 +63,12 @@
     letter-spacing: -0.01em;
     text-decoration: none;
     color: inherit;
+  }
+
+  .top-nav__actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
   }
 
   .top-nav__links {
@@ -72,12 +89,47 @@
   }
 
   .top-nav__links a:hover {
-    background: rgba(148, 163, 184, 0.2);
+    background: var(--nav-hover-bg);
   }
 
   .top-nav__links a.is-active {
-    background: #3b82f6;
-    color: white;
+    background: var(--nav-active-bg);
+    color: var(--color-accent-contrast);
+  }
+
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    background: transparent;
+    border: 1px solid var(--toggle-border);
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .theme-toggle:hover,
+  .theme-toggle:focus-visible {
+    background: var(--toggle-hover-bg);
+    border-color: var(--toggle-hover-border);
+    outline: none;
+  }
+
+  .theme-toggle:focus-visible {
+    box-shadow: 0 0 0 2px var(--color-accent);
+  }
+
+  .theme-toggle__icon {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .theme-toggle__text {
+    font-size: 0.875rem;
   }
 
   @media (max-width: 640px) {
@@ -86,9 +138,20 @@
       align-items: flex-start;
     }
 
+    .top-nav__actions {
+      width: 100%;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+
     .top-nav__links {
       flex-wrap: wrap;
       gap: 0.5rem;
+    }
+
+    .theme-toggle {
+      margin-left: auto;
     }
   }
 </style>

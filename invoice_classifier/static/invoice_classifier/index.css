@@ -1,12 +1,7 @@
-:root {
-  color-scheme: light dark;
-  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
 body.index-body {
   margin: 0;
-  background: #0f172a;
-  color: #f8fafc;
+  background: var(--color-background);
+  color: var(--color-on-background);
 }
 
 .content--index {
@@ -24,9 +19,9 @@ body.index-body {
 }
 
 .card {
-  background: rgba(15, 23, 42, 0.9);
+  background: var(--color-surface-elevated);
   border-radius: 18px;
-  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.45);
+  box-shadow: 0 20px 45px var(--shadow-strong);
   width: min(640px, 100%);
   padding: 2.5rem;
 }
@@ -49,17 +44,17 @@ input[type="file"] {
   font: inherit;
   padding: 0.65rem 0.75rem;
   border-radius: 10px;
-  border: 1px solid rgba(148, 163, 184, 0.4);
-  background: rgba(15, 23, 42, 0.75);
-  color: inherit;
+  border: 1px solid var(--color-input-border);
+  background: var(--color-input-bg);
+  color: var(--color-on-surface);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 input[type="text"]:focus,
 input[type="file"]:focus {
   outline: none;
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+  border-color: var(--color-input-border-strong);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
 }
 
 button {
@@ -70,7 +65,7 @@ button {
   background: linear-gradient(135deg, #38bdf8, #6366f1);
   border: none;
   border-radius: 999px;
-  color: #0f172a;
+  color: var(--color-accent-contrast);
   cursor: pointer;
   font-weight: 700;
   font-size: 1rem;
@@ -101,23 +96,23 @@ button[disabled] {
 }
 
 .message.success {
-  background: rgba(34, 197, 94, 0.2);
-  border: 1px solid rgba(34, 197, 94, 0.4);
-  color: #bbf7d0;
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success-text);
 }
 
 .message.error {
-  background: rgba(239, 68, 68, 0.2);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #fecaca;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  color: var(--color-error-text);
 }
 
 .result {
   margin-top: 1.25rem;
   padding: 1rem 1.25rem;
   border-radius: 12px;
-  background: rgba(148, 163, 184, 0.12);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
 }
 
 .result dt {
