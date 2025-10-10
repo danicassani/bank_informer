@@ -39,7 +39,22 @@
                   {% endwith %}
                 {% endif %}
               </div>
-              {{ field }}
+              {% if field.field.widget.input_type == "password" %}
+                <div class="auth-password-wrapper" data-password-wrapper>
+                  {{ field }}
+                  <button
+                    type="button"
+                    class="auth-password-toggle"
+                    data-password-toggle
+                    aria-label="Mostrar contraseña"
+                    aria-pressed="false"
+                  >
+                    <span data-password-toggle-text>Mostrar</span>
+                  </button>
+                </div>
+              {% else %}
+                {{ field }}
+              {% endif %}
               {% if field.name == "password1" %}
                 <div class="password-strength" data-password-strength>
                   <div class="password-strength-bar" data-strength-bar></div>
@@ -117,6 +132,38 @@
       color: inherit;
       font-size: 1rem;
       box-sizing: border-box;
+    }
+
+    .auth-password-wrapper {
+      position: relative;
+    }
+
+    .auth-password-wrapper input {
+      padding-right: 3rem;
+    }
+
+    .auth-password-toggle {
+      position: absolute;
+      top: 50%;
+      right: 0.75rem;
+      transform: translateY(-50%);
+      border: none;
+      background: none;
+      color: var(--color-muted);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .auth-password-toggle:hover,
+    .auth-password-toggle:focus-visible {
+      color: var(--color-accent);
+      outline: none;
+    }
+
+    .auth-password-toggle.is-active {
+      color: var(--color-accent);
     }
 
     .auth-tooltip {
@@ -264,5 +311,6 @@
 
 {% block extra_scripts %}
   {{ block.super }}
+  <script src="{% static 'invoice_classifier/password_toggle.js' %}" defer></script>
   <script src="{% static 'invoice_classifier/sign_up.js' %}" defer></script>
 {% endblock %}
