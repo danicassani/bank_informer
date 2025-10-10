@@ -23,6 +23,8 @@
       }
 
       var labelSpan = toggle.querySelector("[data-password-toggle-text]");
+      var showIcon = toggle.querySelector('[data-password-icon="show"]');
+      var hideIcon = toggle.querySelector('[data-password-icon="hide"]');
 
       function updateState() {
         var isVisible = input.type === "text";
@@ -33,12 +35,22 @@
           isVisible ? "Ocultar contraseña" : "Mostrar contraseña"
         );
 
-        var labelText = isVisible ? "Ocultar" : "Mostrar";
+        var labelText = isVisible
+          ? "Ocultar contraseña"
+          : "Mostrar contraseña";
 
         if (labelSpan) {
           labelSpan.textContent = labelText;
         } else {
           toggle.textContent = labelText;
+        }
+
+        if (showIcon) {
+          showIcon.hidden = isVisible;
+        }
+
+        if (hideIcon) {
+          hideIcon.hidden = !isVisible;
         }
       }
 
