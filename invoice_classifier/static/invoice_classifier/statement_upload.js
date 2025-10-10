@@ -19,6 +19,27 @@ createApp({
       const match = document.cookie.match(/csrftoken=([^;]+)/);
       return match ? decodeURIComponent(match[1]) : "";
     },
+    statementSummary() {
+      if (!this.result) {
+        return "";
+      }
+
+      const statementId = this.result.statement_id;
+      const fileName = this.result.file_name || "";
+
+      const idText = statementId ? `#${statementId}` : "";
+      return [idText, fileName].filter(Boolean).join(" · ");
+    },
+    transactionsCreated() {
+      if (!this.result) {
+        return "";
+      }
+
+      const { transactions_created: transactionsCreated } = this.result;
+      return typeof transactionsCreated === "number"
+        ? transactionsCreated
+        : transactionsCreated || "";
+    },
   },
   methods: {
     onFileChange(event) {
