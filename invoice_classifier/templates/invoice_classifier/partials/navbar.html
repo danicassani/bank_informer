@@ -2,42 +2,59 @@
   <div class="top-nav__inner">
     <a class="top-nav__brand" href="{% url 'index' %}">Bank Informer</a>
     <div class="top-nav__actions">
-      <ul class="top-nav__links">
-        <li>
-          <a href="{% url 'index' %}" class="{% if active_page == 'index' %}is-active{% endif %}">
-            Visualizador
-          </a>
-        </li>
-        <li>
-          <a href="{% url 'manage_classification_criteria' %}" class="{% if active_page == 'criteria' %}is-active{% endif %}">
-            Criterios
-          </a>
-        </li>
-        <li>
-          <a href="{% url 'upload_csv' %}" class="{% if active_page == 'upload' %}is-active{% endif %}">
-            Upload CSV
-          </a>
-        </li>
-        <li>
-          <a href="{% url 'debug_sql_console' %}" class="{% if active_page == 'sql' %}is-active{% endif %}">
-            SQL
-          </a>
-        </li>
-        <li>
-          <a href="{% url 'admin:index' %}" class="{% if active_page == 'admin' %}is-active{% endif %}">
-            Admin
-          </a>
-        </li>
-      </ul>
-      <button
-        type="button"
-        class="theme-toggle js-theme-toggle"
-        aria-pressed="false"
-        aria-label="Cambiar tema"
-      >
-        <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
-        <span class="theme-toggle__text">Modo oscuro</span>
-      </button>
+      {% if user.is_authenticated %}
+        <ul class="top-nav__links">
+          <li>
+            <a href="{% url 'index' %}" class="{% if active_page == 'index' %}is-active{% endif %}">
+              Visualizador
+            </a>
+          </li>
+          <li>
+            <a href="{% url 'manage_classification_criteria' %}" class="{% if active_page == 'criteria' %}is-active{% endif %}">
+              Criterios
+            </a>
+          </li>
+          <li>
+            <a href="{% url 'upload_csv' %}" class="{% if active_page == 'upload' %}is-active{% endif %}">
+              Upload CSV
+            </a>
+          </li>
+          {% if user.is_staff %}
+            <li>
+              <a href="{% url 'admin:index' %}" class="{% if active_page == 'admin' %}is-active{% endif %}">
+                Admin
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      {% endif %}
+      <div class="top-nav__meta">
+        <div class="top-nav__auth">
+          {% if user.is_authenticated %}
+            <span class="top-nav__welcome">Hola, {{ user.get_short_name|default:user.username }}</span>
+            <form method="post" action="{% url 'logout' %}" class="top-nav__logout-form">
+              {% csrf_token %}
+              <button type="submit" class="top-nav__logout-button">Cerrar sesión</button>
+            </form>
+          {% else %}
+            <a href="{% url 'login' %}" class="top-nav__auth-link {% if active_page == 'login' %}is-active{% endif %}">
+              Iniciar sesión
+            </a>
+            <a href="{% url 'sign_up' %}" class="top-nav__auth-link top-nav__auth-link--primary {% if active_page == 'sign_up' %}is-active{% endif %}">
+              Crear cuenta
+            </a>
+          {% endif %}
+        </div>
+        <button
+          type="button"
+          class="theme-toggle js-theme-toggle"
+          aria-pressed="false"
+          aria-label="Cambiar tema"
+        >
+          <span class="theme-toggle__icon" aria-hidden="true">🌙</span>
+          <span class="theme-toggle__text">Modo oscuro</span>
+        </button>
+      </div>
     </div>
   </div>
 </nav>
@@ -79,7 +96,9 @@
     padding: 0;
   }
 
-  .top-nav__links a {
+  .top-nav__links a,
+  .top-nav__auth-link,
+  .top-nav__logout-button {
     text-decoration: none;
     color: inherit;
     padding: 0.35rem 0.85rem;
@@ -88,13 +107,49 @@
     transition: background 0.2s ease, color 0.2s ease;
   }
 
-  .top-nav__links a:hover {
+  .top-nav__links a:hover,
+  .top-nav__auth-link:hover,
+  .top-nav__logout-button:hover {
     background: var(--nav-hover-bg);
   }
 
-  .top-nav__links a.is-active {
+  .top-nav__links a.is-active,
+  .top-nav__auth-link.is-active {
     background: var(--nav-active-bg);
     color: var(--color-accent-contrast);
+  }
+
+  .top-nav__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .top-nav__auth {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .top-nav__auth-link--primary {
+    background: var(--nav-active-bg);
+    color: var(--color-accent-contrast);
+  }
+
+  .top-nav__welcome {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .top-nav__logout-form {
+    margin: 0;
+  }
+
+  .top-nav__logout-button {
+    border: 1px solid var(--toggle-border);
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
   }
 
   .theme-toggle {
@@ -140,9 +195,9 @@
 
     .top-nav__actions {
       width: 100%;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 0.75rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
     }
 
     .top-nav__links {
@@ -150,8 +205,15 @@
       gap: 0.5rem;
     }
 
-    .theme-toggle {
-      margin-left: auto;
+    .top-nav__meta {
+      width: 100%;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .top-nav__auth {
+      flex-wrap: wrap;
+      gap: 0.35rem;
     }
   }
 </style>

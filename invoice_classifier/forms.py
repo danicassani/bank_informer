@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from django import forms
+from django.contrib.auth import password_validation
+from django.contrib.auth.forms import UserCreationForm, UsernameField
+from django.contrib.auth.models import User
 
 from .models import ClassificationCriterion
 
@@ -35,8 +40,11 @@ class ClassificationCriterionForm(forms.ModelForm):
             "description": forms.Textarea(attrs={"rows": 3}),
         }
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, user: User | None = None, **kwargs: Any) -> None:
+        self.request_user = user
         super().__init__(*args, **kwargs)
+        if self.request_user is not None and self.instance.pk and self.instance.user_id is None:
+            self.instance.user = self.request_user
         if not self.is_bound and self.instance.pk:
             self.initial["concept_keywords"] = "\n".join(self.instance.concept_keywords or [])
 
@@ -49,7 +57,45 @@ class ClassificationCriterionForm(forms.ModelForm):
 
     def save(self, commit: bool = True) -> ClassificationCriterion:
         instance: ClassificationCriterion = super().save(commit=False)
+        if instance.pk is None and self.request_user is not None:
+            instance.user = self.request_user
+        elif self.request_user is not None and instance.user_id is None:
+            instance.user = self.request_user
         instance.concept_keywords = self.cleaned_data.get("concept_keywords", [])
         if commit:
             instance.save()
         return instance
+
+
+class SignUpForm(UserCreationForm):
+    """Registration form with localized labels for new users."""
+
+    username = UsernameField(
+        label="Nombre de usuario",
+        max_length=64,
+        help_text="Usa letras (a-z), números (0-9) y los símbolos @ . + - _. Máximo 64 caracteres.",
+        widget=forms.TextInput(attrs={"autofocus": True, "autocomplete": "username"}),
+    )
+
+    email = forms.EmailField(
+        label="Correo electrónico",
+        required=False,
+        help_text="Opcional, usado para recuperar la cuenta.",
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ("username", "email")
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        password_help = password_validation.password_validators_help_texts()
+        if password_help:
+            self.fields["password1"].help_text = "\n".join(password_help)
+
+    def save(self, commit: bool = True) -> User:
+        user: User = super().save(commit=False)
+        user.email = self.cleaned_data.get("email", "")
+        if commit:
+            user.save()
+        return user

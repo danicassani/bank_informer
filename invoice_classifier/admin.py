@@ -8,13 +8,14 @@ class StatementImportAdmin(admin.ModelAdmin):
     """Admin configuration for imported bank statements."""
 
     list_display = (
+        "user",
         "source_name",
         "file_name",
         "imported_at",
         "created_at",
     )
-    list_filter = ("source_name", "imported_at")
-    search_fields = ("source_name", "file_name")
+    list_filter = ("user", "source_name", "imported_at")
+    search_fields = ("source_name", "file_name", "user__username")
     date_hierarchy = "imported_at"
 
 
@@ -35,8 +36,10 @@ class BankTransactionAdmin(admin.ModelAdmin):
         "amount",
         "currency",
         "statement",
+        "user",
     )
     list_filter = (
+        "user",
         "currency",
         "booking_date",
         "statement__source_name",
@@ -45,6 +48,7 @@ class BankTransactionAdmin(admin.ModelAdmin):
         "concept",
         "normalized_concept",
         "statement__source_name",
+        "user__username",
     )
     date_hierarchy = "booking_date"
     autocomplete_fields = ("statement",)
@@ -62,8 +66,8 @@ class ClassificationLabelInline(admin.TabularInline):
 class ClassificationCriterionAdmin(admin.ModelAdmin):
     """Admin configuration for classification criteria."""
 
-    list_display = ("name", "slug")
-    search_fields = ("name", "slug")
+    list_display = ("name", "slug", "user")
+    search_fields = ("name", "slug", "user__username")
     inlines = (ClassificationLabelInline,)
 
 
@@ -77,8 +81,8 @@ class ClassificationLabelAdmin(admin.ModelAdmin):
         "parent",
         "slug",
     )
-    list_filter = ("criterion",)
-    search_fields = ("name", "slug", "criterion__name")
+    list_filter = ("criterion", "criterion__user")
+    search_fields = ("name", "slug", "criterion__name", "criterion__user__username")
     autocomplete_fields = ("criterion", "parent")
     prepopulated_fields = {"slug": ("name",)}
 
@@ -94,10 +98,11 @@ class TransactionClassificationAdmin(admin.ModelAdmin):
         "confidence",
         "created_at",
     )
-    list_filter = ("source", "label__criterion")
+    list_filter = ("source", "label__criterion", "label__criterion__user")
     search_fields = (
         "transaction__concept",
         "label__name",
         "label__criterion__name",
+        "label__criterion__user__username",
     )
     autocomplete_fields = ("transaction", "label")

@@ -9,10 +9,11 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
-from django.core.files.base import ContentFile
-from django.db import connection, transaction
+from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
+from django.db import transaction
 from django.db.models import Sum
-from django.db.utils import DatabaseError
 from django.http import HttpRequest, HttpResponse, JsonResponse, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -20,7 +21,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 
-from .forms import ClassificationCriterionForm
+from .forms import ClassificationCriterionForm, SignUpForm
 from .models import (
     BankTransaction,
     ClassificationCriterion,
@@ -29,6 +30,7 @@ from .models import (
 )
 
 
+@login_required
 @ensure_csrf_cookie
 def upload_csv(request: HttpRequest) -> HttpResponse:
     """Render the CSV upload interface."""
@@ -53,20 +55,25 @@ MONTH_NAMES_ES = [
 ]
 
 
+@login_required
 @ensure_csrf_cookie
 def index(request: HttpRequest) -> HttpResponse:
     """Display aggregated spending per criterion using interactive controls."""
 
     today = timezone.localdate()
-    criteria_qs = ClassificationCriterion.objects.all().order_by("name")
+    criteria_qs = (
+        ClassificationCriterion.objects.filter(user=request.user).order_by("name")
+    )
     available_criteria_slugs = list(criteria_qs.values_list("slug", flat=True))
     active_tab = request.GET.get("tab", "all")
     if active_tab not in {"all", "single"}:
         active_tab = "all"
 
-    available_years_qs = BankTransaction.objects.filter(
-        booking_date__isnull=False
-    ).dates("booking_date", "year", order="ASC")
+    available_years_qs = (
+        BankTransaction.objects.filter(
+            user=request.user, booking_date__isnull=False
+        ).dates("booking_date", "year", order="ASC")
+    )
     available_years = [dt.year for dt in available_years_qs]
     if not available_years:
         available_years = [today.year]
@@ -118,6 +125,7 @@ def index(request: HttpRequest) -> HttpResponse:
 
         classifications = TransactionClassification.objects.filter(
             label__criterion__in=selected_criteria,
+            label__criterion__user=request.user,
             transaction__booking_date__gte=period_start,
             transaction__booking_date__lt=period_end,
             transaction__amount__lt=0,
@@ -210,6 +218,7 @@ def index(request: HttpRequest) -> HttpResponse:
         if selected_criterion is not None:
             base_classifications = TransactionClassification.objects.filter(
                 label__criterion=selected_criterion,
+                label__criterion__user=request.user,
                 transaction__amount__lt=0,
                 transaction__booking_date__isnull=False,
             )
@@ -359,6 +368,7 @@ def index(request: HttpRequest) -> HttpResponse:
     )
 
 
+@login_required
 @ensure_csrf_cookie
 def visualizer(request: HttpRequest) -> HttpResponse:
     """Backward-compatible alias for the CSV upload page."""
@@ -393,6 +403,7 @@ def _clean_row(row: dict[str, str]) -> dict[str, str]:
     return {key: (value or "").strip() for key, value in row.items()}
 
 
+@login_required
 @require_http_methods(["POST"])
 def upload_statement(request: HttpRequest) -> JsonResponse:
     """Handle CSV uploads and persist them as statements and transactions."""
@@ -433,6 +444,7 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
     try:
         with transaction.atomic():
             statement = StatementImport.objects.create(
+                user=request.user,
                 source_name=source_name,
                 file_name=uploaded_file.name,
             )
@@ -459,6 +471,7 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
 
                 transactions.append(
                     BankTransaction(
+                        user=request.user,
                         statement=statement,
                         concept=concept,
                         booking_date=booking_date,
@@ -482,58 +495,26 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
     )
 
 
-@require_http_methods(["GET", "POST"])
-@ensure_csrf_cookie
-def debug_sql_console(request: HttpRequest) -> HttpResponse:
-    """Render a simple SQL console for ad-hoc debugging queries."""
-
-    query = ""
-    error_message: str | None = None
-    columns: list[str] | None = None
-    rows: list[tuple[object, ...]] | None = None
-    rowcount: int | None = None
-
-    if request.method == "POST":
-        query = request.POST.get("query", "").strip()
-
-        if query:
-            try:
-                with connection.cursor() as cursor:
-                    cursor.execute(query)
-                    rowcount = cursor.rowcount
-                    if cursor.description:
-                        columns = [column[0] for column in cursor.description]
-                        rows = cursor.fetchall()
-            except DatabaseError as exc:
-                error_message = str(exc)
-        else:
-            error_message = "Introduce una consulta SQL para ejecutar."
-
-    context = {
-        "query": query,
-        "error_message": error_message,
-        "columns": columns,
-        "rows": rows,
-        "rowcount": rowcount,
-    }
-
-    return render(request, "invoice_classifier/debug_sql.html", context)
-
-
+@login_required
 @require_http_methods(["GET", "POST"])
 @ensure_csrf_cookie
 def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
     """Allow users to create and update classification criteria."""
 
-    criteria_list = ClassificationCriterion.objects.all().order_by("name")
+    criteria_list = ClassificationCriterion.objects.filter(user=request.user).order_by(
+        "name"
+    )
     unclassified_transactions_qs = (
-        BankTransaction.objects.filter(classifications__isnull=True)
+        BankTransaction.objects.filter(
+            user=request.user,
+            classifications__isnull=True,
+        )
         .select_related("statement")
         .order_by("-booking_date", "-id")
     )
     unclassified_count = unclassified_transactions_qs.count()
 
-    create_form = ClassificationCriterionForm(prefix="create")
+    create_form = ClassificationCriterionForm(prefix="create", user=request.user)
     edit_form: ClassificationCriterionForm | None = None
     edit_instance: ClassificationCriterion | None = None
 
@@ -541,14 +522,23 @@ def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
         mode = request.POST.get("mode", "create")
         if mode == "update":
             edit_instance = get_object_or_404(
-                ClassificationCriterion, pk=request.POST.get("criterion_id")
+                ClassificationCriterion,
+                pk=request.POST.get("criterion_id"),
+                user=request.user,
             )
             edit_form = ClassificationCriterionForm(
-                request.POST, instance=edit_instance, prefix="edit"
+                request.POST,
+                instance=edit_instance,
+                prefix="edit",
+                user=request.user,
             )
             form = edit_form
         else:
-            form = ClassificationCriterionForm(request.POST, prefix="create")
+            form = ClassificationCriterionForm(
+                request.POST,
+                prefix="create",
+                user=request.user,
+            )
             create_form = form
 
         if form.is_valid():
@@ -575,8 +565,16 @@ def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
     else:
         edit_id = request.GET.get("edit")
         if edit_id:
-            edit_instance = get_object_or_404(ClassificationCriterion, pk=edit_id)
-            edit_form = ClassificationCriterionForm(instance=edit_instance, prefix="edit")
+            edit_instance = get_object_or_404(
+                ClassificationCriterion,
+                pk=edit_id,
+                user=request.user,
+            )
+            edit_form = ClassificationCriterionForm(
+                instance=edit_instance,
+                prefix="edit",
+                user=request.user,
+            )
 
     context = {
         "criteria_list": criteria_list,
@@ -588,3 +586,62 @@ def manage_classification_criteria(request: HttpRequest) -> HttpResponse:
     }
 
     return render(request, "invoice_classifier/manage_criteria.html", context)
+
+
+@require_http_methods(["GET", "POST"])
+@ensure_csrf_cookie
+def login_view(request: HttpRequest) -> HttpResponse:
+    """Authenticate an existing user."""
+
+    if request.user.is_authenticated:
+        return redirect("index")
+
+    redirect_target = request.POST.get("next") or request.GET.get("next")
+    form = AuthenticationForm(request, data=request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        login(request, form.get_user())
+        redirect_to = redirect_target or reverse("index")
+        return redirect(redirect_to)
+
+    return render(
+        request,
+        "invoice_classifier/auth/login.html",
+        {
+            "form": form,
+            "next": redirect_target,
+        },
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@ensure_csrf_cookie
+def sign_up(request: HttpRequest) -> HttpResponse:
+    """Register a new user and log them in immediately."""
+
+    if request.user.is_authenticated:
+        return redirect("index")
+
+    form = SignUpForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        login(request, user)
+        messages.success(request, "Cuenta creada correctamente. ¡Bienvenido!")
+        return redirect("index")
+
+    return render(
+        request,
+        "invoice_classifier/auth/sign_up.html",
+        {
+            "form": form,
+        },
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def logout_view(request: HttpRequest) -> HttpResponse:
+    """Log the current user out and return to the login screen."""
+
+    logout(request)
+    messages.info(request, "Has cerrado sesión.")
+    return redirect("login")

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
@@ -6,6 +7,12 @@ from django.utils.text import slugify
 class StatementImport(models.Model):
     """Metadata about a bank statement file that has been imported."""
 
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="statement_imports",
+        help_text="Usuario al que pertenece la importación.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     source_name = models.CharField(
         max_length=255,
@@ -32,6 +39,12 @@ class StatementImport(models.Model):
 class BankTransaction(models.Model):
     """Represents a single row coming from the bank CSV file."""
 
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="bank_transactions",
+        help_text="Usuario al que pertenece el movimiento bancario.",
+    )
     statement = models.ForeignKey(
         StatementImport,
         on_delete=models.CASCADE,
@@ -84,8 +97,14 @@ class BankTransaction(models.Model):
 class ClassificationCriterion(models.Model):
     """Dimension sobre la que se puede clasificar un movimiento (tipo, categoría, etc.)."""
 
-    name = models.CharField(max_length=100, unique=True)
-    slug = models.SlugField(max_length=100, unique=True, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="classification_criteria",
+        help_text="Usuario al que pertenece el criterio.",
+    )
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100, editable=False)
     description = models.TextField(blank=True)
     concept_keywords = models.JSONField(
         default=list,
@@ -111,6 +130,16 @@ class ClassificationCriterion(models.Model):
         ordering = ("name",)
         verbose_name = "Criterio de clasificación"
         verbose_name_plural = "Criterios de clasificación"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("user", "name"),
+                name="criterion_user_name_unique",
+            ),
+            models.UniqueConstraint(
+                fields=("user", "slug"),
+                name="criterion_user_slug_unique",
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.name
@@ -200,9 +229,15 @@ class ClassificationCriterion(models.Model):
     def classify_unclassified_transactions(self) -> int:
         """Classify unclassified transactions that match this criterion."""
 
+        if not self.user_id:
+            return 0
+
         label = self.get_or_create_default_label()
         unclassified = (
-            BankTransaction.objects.filter(classifications__isnull=True)
+            BankTransaction.objects.filter(
+                user=self.user,
+                classifications__isnull=True,
+            )
             .only("id", "concept", "normalized_concept", "amount")
             .iterator(chunk_size=200)
         )
