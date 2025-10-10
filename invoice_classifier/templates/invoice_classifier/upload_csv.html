@@ -57,18 +57,21 @@
         </button>
       </form>
 
-      <div v-if="message" class="message" :class="messageType">
-        {{ message }}
-      </div>
+      <div
+        v-if="message"
+        class="message"
+        :class="messageType"
+        v-text="message"
+      ></div>
 
       <dl v-if="result" class="result">
         <div>
           <dt>Importación</dt>
-          <dd>#{{ result.statement_id }} · {{ result.file_name }}</dd>
+          <dd v-text="statementSummary"></dd>
         </div>
         <div>
           <dt>Movimientos creados</dt>
-          <dd>{{ result.transactions_created }}</dd>
+          <dd v-text="transactionsCreated"></dd>
         </div>
       </dl>
     </div>
