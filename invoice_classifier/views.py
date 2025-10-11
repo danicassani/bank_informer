@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 from calendar import monthrange
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
@@ -403,6 +404,30 @@ def _clean_row(row: dict[str, str]) -> dict[str, str]:
     return {key: (value or "").strip() for key, value in row.items()}
 
 
+def _build_transaction_signature(
+    *,
+    concept: str,
+    booking_date: date,
+    amount: Decimal,
+    available_balance: Decimal,
+    currency: str,
+    raw_data: dict[str, str],
+) -> str:
+    """Return a stable string representing a transaction for deduplication."""
+
+    raw_json = json.dumps(raw_data, sort_keys=True, ensure_ascii=False)
+    return "|".join(
+        [
+            booking_date.isoformat(),
+            concept,
+            format(amount, "f"),
+            format(available_balance, "f"),
+            currency,
+            raw_json,
+        ]
+    )
+
+
 @login_required
 @require_http_methods(["POST"])
 def upload_statement(request: HttpRequest) -> JsonResponse:
@@ -442,6 +467,94 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
         )
 
     try:
+        default_currency = BankTransaction._meta.get_field("currency").get_default()
+        parsed_rows: list[dict[str, object]] = []
+        for raw_row in reader:
+            row = _clean_row(raw_row)
+            if not any(row.values()):
+                continue
+
+            try:
+                booking_date = datetime.strptime(row["Fecha"], "%d/%m/%Y").date()
+            except ValueError as exc:
+                raise ValueError(
+                    f"La fecha '{row['Fecha']}' no tiene el formato esperado DD/MM/AAAA."
+                ) from exc
+
+            concept = row["Concepto"]
+            if not concept:
+                raise ValueError("Hay un movimiento sin concepto.")
+
+            amount = _parse_decimal(row["Importe"])
+            balance = _parse_decimal(row["Saldo disponible"])
+
+            parsed_rows.append(
+                {
+                    "concept": concept,
+                    "booking_date": booking_date,
+                    "amount": amount,
+                    "available_balance": balance,
+                    "currency": default_currency,
+                    "raw_data": row,
+                }
+            )
+
+        if not parsed_rows:
+            raise ValueError("El fichero no contiene movimientos válidos.")
+
+        concepts = {entry["concept"] for entry in parsed_rows}
+        dates = {entry["booking_date"] for entry in parsed_rows}
+        amounts = {entry["amount"] for entry in parsed_rows}
+        balances = {entry["available_balance"] for entry in parsed_rows}
+        currencies = {entry["currency"] for entry in parsed_rows}
+
+        existing_transactions = BankTransaction.objects.filter(
+            user=request.user,
+            concept__in=concepts,
+            booking_date__in=dates,
+            amount__in=amounts,
+            available_balance__in=balances,
+            currency__in=currencies,
+        )
+
+        existing_signatures = {
+            _build_transaction_signature(
+                concept=tx.concept,
+                booking_date=tx.booking_date,
+                amount=tx.amount,
+                available_balance=tx.available_balance,
+                currency=tx.currency,
+                raw_data=tx.raw_data,
+            )
+            for tx in existing_transactions
+        }
+
+        seen_signatures = set(existing_signatures)
+        deduplicated_rows: list[dict[str, object]] = []
+        ignored_count = 0
+
+        for entry in parsed_rows:
+            signature = _build_transaction_signature(
+                concept=entry["concept"],
+                booking_date=entry["booking_date"],
+                amount=entry["amount"],
+                available_balance=entry["available_balance"],
+                currency=entry["currency"],
+                raw_data=entry["raw_data"],
+            )
+            if signature in seen_signatures:
+                ignored_count += 1
+                continue
+
+            seen_signatures.add(signature)
+            deduplicated_rows.append(entry)
+
+        if not deduplicated_rows:
+            return JsonResponse(
+                {"error": "Las entradas de este CSV ya figuran en la base de datos."},
+                status=400,
+            )
+
         with transaction.atomic():
             statement = StatementImport.objects.create(
                 user=request.user,
@@ -449,37 +562,19 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
                 file_name=uploaded_file.name,
             )
 
-            transactions: list[BankTransaction] = []
-            for raw_row in reader:
-                row = _clean_row(raw_row)
-                if not any(row.values()):
-                    continue
-
-                try:
-                    booking_date = datetime.strptime(row["Fecha"], "%d/%m/%Y").date()
-                except ValueError as exc:
-                    raise ValueError(
-                        f"La fecha '{row['Fecha']}' no tiene el formato esperado DD/MM/AAAA."
-                    ) from exc
-
-                concept = row["Concepto"]
-                if not concept:
-                    raise ValueError("Hay un movimiento sin concepto.")
-
-                amount = _parse_decimal(row["Importe"])
-                balance = _parse_decimal(row["Saldo disponible"])
-
-                transactions.append(
-                    BankTransaction(
-                        user=request.user,
-                        statement=statement,
-                        concept=concept,
-                        booking_date=booking_date,
-                        amount=amount,
-                        available_balance=balance,
-                        raw_data=row,
-                    )
+            transactions = [
+                BankTransaction(
+                    user=request.user,
+                    statement=statement,
+                    concept=entry["concept"],
+                    booking_date=entry["booking_date"],
+                    amount=entry["amount"],
+                    available_balance=entry["available_balance"],
+                    currency=entry["currency"],
+                    raw_data=entry["raw_data"],
                 )
+                for entry in deduplicated_rows
+            ]
 
             BankTransaction.objects.bulk_create(transactions)
     except ValueError as exc:
@@ -489,6 +584,7 @@ def upload_statement(request: HttpRequest) -> JsonResponse:
         {
             "statement_id": statement.id,
             "transactions_created": len(transactions),
+            "transactions_ignored": ignored_count,
             "file_name": statement.file_name,
         },
         status=201,
