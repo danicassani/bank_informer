@@ -78,9 +78,16 @@ createApp({
           throw new Error(payload.error || "No se ha podido completar la importación.");
         }
 
-        this.message = "Importación realizada correctamente.";
-        this.messageType = "success";
         this.result = payload;
+        const ignored = Number(payload.transactions_ignored || 0);
+        if (ignored > 0) {
+          const plural = ignored === 1 ? "entrada duplicada" : "entradas duplicadas";
+          const verb = ignored === 1 ? "ha" : "han";
+          this.message = `Importación realizada correctamente. Se ${verb} ignorado ${ignored} ${plural}.`;
+        } else {
+          this.message = "Importación realizada correctamente.";
+        }
+        this.messageType = "success";
         this.sourceName = "";
         this.file = null;
         this.$refs.fileInput.value = "";
