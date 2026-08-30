@@ -151,6 +151,21 @@
               },
             },
           },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'xy',
+            },
+            zoom: {
+              wheel: {
+                enabled: true,
+              },
+              pinch: {
+                enabled: true,
+              },
+              mode: 'xy',
+            },
+          },
         },
         onHover(event, elements) {
           const canvas = event && event.chart ? event.chart.canvas : null;
@@ -193,6 +208,51 @@
     });
 
     return chart;
+  }
+
+  function initChartControls(chart) {
+    if (!chart) {
+      return;
+    }
+
+    const zoomIn = document.querySelector('[data-chart-zoom-in]');
+    const zoomOut = document.querySelector('[data-chart-zoom-out]');
+    const reset = document.querySelector('[data-chart-reset]');
+    const refreshSelect = document.querySelector('[data-refresh-interval]');
+    const storageKey = 'visualizerRefreshInterval';
+    const allowedIntervals = ['1', '5', '10', '30', '60'];
+    let refreshTimer;
+
+    if (zoomIn && typeof chart.zoom === 'function') {
+      zoomIn.addEventListener('click', () => chart.zoom(1.2));
+    }
+    if (zoomOut && typeof chart.zoom === 'function') {
+      zoomOut.addEventListener('click', () => chart.zoom(0.8));
+    }
+    if (reset && typeof chart.resetZoom === 'function') {
+      reset.addEventListener('click', () => chart.resetZoom());
+    }
+
+    if (!refreshSelect) {
+      return;
+    }
+
+    const scheduleRefresh = (seconds) => {
+      window.clearInterval(refreshTimer);
+      refreshTimer = window.setInterval(() => window.location.reload(), seconds * 1000);
+    };
+    const savedInterval = window.localStorage.getItem(storageKey);
+    const initialInterval = allowedIntervals.includes(savedInterval) ? savedInterval : '10';
+    refreshSelect.value = initialInterval;
+    scheduleRefresh(Number(initialInterval));
+
+    refreshSelect.addEventListener('change', () => {
+      const interval = allowedIntervals.includes(refreshSelect.value)
+        ? refreshSelect.value
+        : '10';
+      window.localStorage.setItem(storageKey, interval);
+      scheduleRefresh(Number(interval));
+    });
   }
 
   function initDetailsSection() {
@@ -356,7 +416,8 @@
     const container = document.querySelector('.chart-card__inner');
     const chartData = readChartData();
     const showDetails = initDetailsSection();
-    renderChart(container, chartData, showDetails);
+    const chart = renderChart(container, chartData, showDetails);
+    initChartControls(chart);
 
     const form = document.querySelector('.controls');
     if (!form) {

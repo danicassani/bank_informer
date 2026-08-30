@@ -11,6 +11,8 @@
   {{ block.super }}
   <link rel="stylesheet" href="{% static 'invoice_classifier/visualizer.css' %}" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -107,6 +109,23 @@
           <section class="chart-card visualizer__chart">
             {% if chart_entries %}
               {{ chart_entries|json_script:"visualizer-chart-data" }}
+              <div class="chart-toolbar" aria-label="Controles de la gráfica">
+                <div class="chart-toolbar__zoom" role="group" aria-label="Zoom">
+                  <button type="button" data-chart-zoom-in aria-label="Acercar gráfica">Zoom +</button>
+                  <button type="button" data-chart-zoom-out aria-label="Alejar gráfica">Zoom −</button>
+                  <button type="button" data-chart-reset>Restablecer</button>
+                </div>
+                <label class="chart-toolbar__refresh">
+                  Actualizar cada
+                  <select data-refresh-interval>
+                    <option value="1">1 s</option>
+                    <option value="5">5 s</option>
+                    <option value="10">10 s</option>
+                    <option value="30">30 s</option>
+                    <option value="60">1 min</option>
+                  </select>
+                </label>
+              </div>
               <div class="chart-card__inner">
                 <canvas id="spending-chart" height="120"></canvas>
               </div>
@@ -196,6 +215,23 @@
           <section class="chart-card visualizer__chart">
             {% if chart_entries %}
               {{ chart_entries|json_script:"visualizer-chart-data" }}
+              <div class="chart-toolbar" aria-label="Controles de la gráfica">
+                <div class="chart-toolbar__zoom" role="group" aria-label="Zoom">
+                  <button type="button" data-chart-zoom-in aria-label="Acercar gráfica">Zoom +</button>
+                  <button type="button" data-chart-zoom-out aria-label="Alejar gráfica">Zoom −</button>
+                  <button type="button" data-chart-reset>Restablecer</button>
+                </div>
+                <label class="chart-toolbar__refresh">
+                  Actualizar cada
+                  <select data-refresh-interval>
+                    <option value="1">1 s</option>
+                    <option value="5">5 s</option>
+                    <option value="10">10 s</option>
+                    <option value="30">30 s</option>
+                    <option value="60">1 min</option>
+                  </select>
+                </label>
+              </div>
               <div class="chart-card__inner">
                 <canvas id="spending-chart" height="120"></canvas>
               </div>
